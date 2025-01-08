@@ -37,9 +37,9 @@ void setup()
 
 void loop()
 {
-    for(uint8_t i = 0; i < 10; i++) {
+    for(uint8_t i = 0; i < 100; i++) {
         if (scale_ready()) {
-            long reading = scale_read_average();
+            long reading = scale_read();
             Serial.print("HX711 reading: ");
             Serial.println(reading);
         } else {
