@@ -45,9 +45,10 @@ void loop()
         } else {
             Serial.println("Not ready");
         }
-        delay(200);
+        delay(100);
     }
 
     scale_end();
+    digitalWrite(LED_BUILTIN, LOW);
     LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);
 }
