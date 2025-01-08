@@ -48,5 +48,6 @@ void loop()
         delay(200);
     }
 
+    scale_end();
     LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);
 }
