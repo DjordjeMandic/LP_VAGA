@@ -5,7 +5,9 @@
 #include <power/hx711.hpp>
 #include <power/ds3231.hpp>
 #include <power/gsm.hpp>
+#include <power/dht22.hpp>
 #include <module/scale.hpp>
+#include <module/dht.hpp>
 #include <Serial.hpp>
 #include <RTClib.h>
 #include <DHT.h>
@@ -19,10 +21,14 @@
 // create struct
 
 
+void user_scale_calibration();
+
+
 void setup()
 {
     gsm_power_off();
-    hx711_power_off();
+    scale_end();
+    dht_end();
     ds3231_power_off();
 
     pinMode(LED_BUILTIN, OUTPUT);
@@ -61,4 +67,9 @@ void loop()
     scale_end();
     digitalWrite(LED_BUILTIN, LOW);
     LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);
+}
+
+void user_scale_calibration()
+{
+    scale_begin();
 }

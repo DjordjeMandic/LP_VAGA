@@ -1,9 +1,6 @@
 #pragma once
 
 #include <Arduino.h>
-#include <avr/power.h>
-#include <avr/sleep.h>
-
 #ifndef AVCC_SAMPLES_DEFAULT
 #define AVCC_SAMPLES_DEFAULT 6
 #endif

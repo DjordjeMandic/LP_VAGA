@@ -1,7 +1,5 @@
 #pragma once
 
-#include <Arduino.h>
-
 #define HX711_POWER_DELAY_MS        500
 #define HX711_POWER_PIN_STATE_OFF   LOW
 #define HX711_POWER_PIN_STATE_ON    HIGH

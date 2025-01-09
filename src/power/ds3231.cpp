@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <power/ds3231.hpp>
-#include <Config.h>
+#include <Config.hpp>
 
 static unsigned long ds3231_power_on_millis_ = 0;
 
@@ -20,7 +20,7 @@ void ds3231_power_float()
     pinMode(DS3231_POWER_PIN, INPUT);
 }
 
-void ds3231_rtc_power_on()
+void ds3231_power_on()
 {
     pinMode(DS3231_POWER_PIN, OUTPUT);
     digitalWrite(DS3231_POWER_PIN, DS3231_POWER_PIN_STATE_ON); 

@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <HX711.h>
 #include <module/scale.hpp>
 #include <power/hx711.hpp>
 #include <Config.hpp>

@@ -12,7 +12,7 @@ void ds3231_power_off();
 
 void ds3231_power_float();
 
-void ds3231_rtc_power_on();
+void ds3231_power_on();
 
 bool ds3231_power_delay_check();
 

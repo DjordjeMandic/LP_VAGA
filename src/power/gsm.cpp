@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <power/gsm.hpp>
-#include <Config.h>
+#include <config.hpp>
 
 static unsigned long gsm_power_on_millis_ = 0;
 

@@ -42,12 +42,16 @@
 #define HX711_GAIN_FACTOR 128
 #endif
 
-#ifndef DHT_POWER_PIN
-#define DHT_POWER_PIN 11
+#ifndef DHT22_POWER_PIN
+#define DHT22_POWER_PIN 11
 #endif
 
-#ifndef DHT_DATA_PIN
-#define DHT_DATA_PIN 12
+#ifndef DHT22_DATA_PIN
+#define DHT22_DATA_PIN 12
+#endif
+
+#ifndef DHT_TYPE
+#define DHT_TYPE DHT22
 #endif
 
 #ifndef BUTTON_CALIBRATE_PIN
