@@ -6,11 +6,9 @@
 
 #warning Stabilizing time of 3-5 seconds should be included (keep reading at 10hz for 3-5 seconds constantly)
 
-#define SCALE_HX711_NOT_POWERED_ON_RETURN(x) { if (!hx711_powered_on()) { return x; } }
+#define scale_return_if_not_powered_on(x) { if (!hx711_powered_on()) { return x; } }
 
-#define SCALE_HX711_DOUT_PIN      7
-#define SCALE_HX711_CLK_PIN       6
-#define SCALE_HX711_GAIN_FACTOR   128
+#define SCALE_STABILIZATION_TIME_MS 3000
 
 void scale_begin();
 

@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <power/ds3231.hpp>
+#include <Config.h>
 
 static unsigned long ds3231_power_on_millis_ = 0;
 

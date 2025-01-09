@@ -2,7 +2,6 @@
 
 #include <Arduino.h>
 
-#define GSM_POWER_PIN           5
 #define GSM_POWER_DELAY_MS      500
 #define GSM_POWER_PIN_STATE_OFF LOW
 #define GSM_POWER_PIN_STATE_ON  HIGH

@@ -2,7 +2,6 @@
 
 #include <Arduino.h>
 
-#define DS3231_POWER_PIN            4
 #define DS3231_POWER_DELAY_MS       500
 #define DS3231_POWER_PIN_STATE_OFF  LOW
 #define DS3231_POWER_PIN_STATE_ON   HIGH

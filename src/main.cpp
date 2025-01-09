@@ -1,10 +1,14 @@
 #include <Arduino.h>
+#include <SPI.h>
 #include <LowPower.h>
 #include <HX711.h>
 #include <power/hx711.hpp>
 #include <power/ds3231.hpp>
 #include <power/gsm.hpp>
 #include <module/scale.hpp>
+#include <Serial.hpp>
+#include <RTClib.h>
+#include <DHT.h>
 
 
 // create function for calibration
@@ -25,11 +29,11 @@ void setup()
     digitalWrite(LED_BUILTIN, HIGH);
 
     scale_begin();
-    Serial.begin(9600);
-    Serial.println(F("Start"));
+    serial_enable();
+    serial_println(F("Start..."));
     while(!hx711_power_delay_check())
     {
-        Serial.println(F("Waiting for HX711 to power on..."));
+        serial_println(F("Waiting for HX711 to power on..."));
     }
     if (!scale_wait_ready_timeout(1000))
     {

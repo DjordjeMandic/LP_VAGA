@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <power/hx711.hpp>
+#include <Config.h>
 
 static unsigned long hx711_power_on_millis_ = 0;
 
