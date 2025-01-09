@@ -1,12 +1,18 @@
 #include <Arduino.h>
 #include <LowPower.h>
 #include <HX711.h>
-#include <power/hx711.h>
-#include <power/ds3231.h>
-#include <power/gsm.h>
-#include <module/scale.h>
+#include <power/hx711.hpp>
+#include <power/ds3231.hpp>
+#include <power/gsm.hpp>
+#include <module/scale.hpp>
 
 
+// create function for calibration
+// create function for tare
+
+
+
+// create struct
 
 
 void setup()
