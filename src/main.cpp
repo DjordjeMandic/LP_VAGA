@@ -9,6 +9,7 @@
 #include <module/scale.hpp>
 #include <module/dht.hpp>
 #include <module/rtc.hpp>
+#include <power/adc.hpp>
 #include <Serial.hpp>
 #include <RTClib.h>
 #include <DHT.h>
@@ -16,6 +17,9 @@
 
 #define BUTTON_PIN_MODE(BUTTON_ACTIVE_STATE) (BUTTON_ACTIVE_STATE == LOW ? INPUT_PULLUP : INPUT)
 #define BUTTON_PRESSED(BUTTON_PIN, BUTTON_ACTIVE_STATE) (digitalRead(BUTTON_PIN) == BUTTON_ACTIVE_STATE)
+
+#define builtin_led_on() { digitalWrite(LED_BUILTIN, HIGH); }
+#define builtin_led_off() { digitalWrite(LED_BUILTIN, LOW); }
 
 // create function for calibration
 // create function for tare
@@ -31,13 +35,8 @@ void power_all_off();
 
 void setup()
 {
-    sim800_power_off();
-    scale_end();
-    dht_end();
-    ds3231_power_off();
+    power_all_off();
 
-    pinMode(LED_BUILTIN, OUTPUT);
-    digitalWrite(LED_BUILTIN, HIGH);
 
     pinMode(BUTTON_CALIBRATE_PIN, BUTTON_PIN_MODE(BUTTON_CALIBRATE_PIN_ACTIVE_STATE));
     pinMode(BUTTON_TARE_PIN, BUTTON_PIN_MODE(BUTTON_TARE_PIN_ACTIVE_STATE));
@@ -96,10 +95,26 @@ void power_all_off()
 {
     /* todo replace this with gsm_end */
     sim800_power_off();
+
+    /* disable physical sensors */
     scale_end();
     dht_end();
+
+    /* disable rtc and twi peripheral */
     rtc_end();
+
+    /* disable on chip uart and adc pheripherals */
     serial_end();
+    adc_end();
+
+    /* disable spi and unnecessary timers */
+    power_spi_disable();
+    power_timer1_disable();
+    power_timer2_disable();
+
+    /* disable builtin led */
+    pinMode(LED_BUILTIN, OUTPUT);
+    builtin_led_off();
 }
 
 bool user_scale_tare()
