@@ -9,4 +9,4 @@
 void serial_enable(unsigned long baudrate = SERIAL_BAUD);
 void serial_disable();
 
-bool serial_print_is_enabled();
+bool serial_is_enabled();
