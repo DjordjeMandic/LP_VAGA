@@ -1,36 +1,48 @@
 #include <Arduino.h>
 #include <avr/sleep.h>
 #include <avr/power.h>
-#include <power/avcc.hpp>
+#include <power/adc.hpp>
 
 EMPTY_INTERRUPT (ADC_vect);
 
-#define avcc_mux_set() (ADMUX = bit(REFS0) | bit(MUX3) | bit(MUX2) | bit(MUX1))
+#define adc_avcc_mux_set() (ADMUX = bit(REFS0) | bit(MUX3) | bit(MUX2) | bit(MUX1))
 
-uint16_t avcc_adc_sample()
+void adc_begin()
+{
+    power_adc_enable();
+    ADCSRA = _BV(ADPS2) | _BV(ADPS1) | _BV(ADEN); // 8 MHz / 64 = 125 KHz
+    ADMUX = bit(REFS0) | bit(MUX3) | bit(MUX2) | bit(MUX1) | bit(MUX0); // External reference connected to AREF pin and GND channel
+}
+
+void adc_end()
+{
+    ADCSRA = 0;
+    power_adc_disable();
+}
+
+uint16_t adc_sample()
 {
     bitSet(ADCSRA, ADSC); // Start the ADC conversion
     loop_until_bit_is_clear(ADCSRA, ADSC); // Wait for the ADC conversion to complete
     return ADC;
 }
 
-void avcc_adc_init()
+void adc_avcc_init(uint8_t stabilization_delay_ms)
 {
-    power_adc_enable();
-    ADCSRA = _BV(ADPS2) | _BV(ADPS1) | _BV(ADEN); // 8 MHz / 64 = 125 KHz
-    avcc_mux_set();
-    avcc_adc_sample();
-    delay(AVCC_REF_STABILIZATION_DELAY_MS);
+    adc_begin();
+    adc_avcc_mux_set();
+    adc_sample();
+    delay(stabilization_delay_ms);
 }
 
-uint16_t avcc_sample()
+uint16_t adc_avcc_sample()
 {
-    avcc_mux_set();
-    avcc_adc_sample();
-    return avcc_adc_sample();
+    adc_avcc_mux_set();
+    adc_sample();
+    return adc_sample();
 }
 
-uint16_t avcc_sample_average(uint8_t samples)
+uint16_t adc_avcc_sample_average(uint8_t samples)
 {
     if (samples == 0)
     {
@@ -39,22 +51,22 @@ uint16_t avcc_sample_average(uint8_t samples)
     uint32_t totalAdcReading = 0;
 
     // Set adc mux and do one dummy sample
-    avcc_mux_set();
-    avcc_adc_sample();
+    adc_avcc_mux_set();
+    adc_sample();
 
     for (uint8_t i = 0; i < samples; i++)
     {
-        totalAdcReading += avcc_adc_sample();
+        totalAdcReading += adc_sample();
     }
 
     return (totalAdcReading + (samples / 2)) / samples;
 }
 
-uint16_t avcc_noise_reduced_sample()
+uint16_t adc_avcc_noise_reduced_sample()
 {
     // set mux and do one dummy sample
-    avcc_mux_set();
-    avcc_adc_sample();
+    adc_avcc_mux_set();
+    adc_sample();
 
     volatile uint8_t TCCR0B_old = TCCR0B; // save timer state
     noInterrupts();
@@ -84,7 +96,7 @@ uint16_t avcc_noise_reduced_sample()
     return ADC; // Return ADC result
 }
 
-uint16_t avcc_noise_reduced_sample_average(uint8_t samples)
+uint16_t adc_avcc_noise_reduced_sample_average(uint8_t samples)
 {
     if (samples == 0)
     {
@@ -93,8 +105,8 @@ uint16_t avcc_noise_reduced_sample_average(uint8_t samples)
     uint32_t totalAdcReading = 0;
 
     // Set adc mux and do one dummy sample
-    avcc_mux_set();
-    avcc_adc_sample();
+    adc_avcc_mux_set();
+    adc_sample();
 
     volatile uint8_t TCCR0B_old = TCCR0B; // save timer state
     noInterrupts();
