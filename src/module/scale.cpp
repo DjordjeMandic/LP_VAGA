@@ -28,25 +28,36 @@ bool scale_ready()
 
 bool scale_wait_ready(unsigned long delay_ms)
 {
-    scale_return_if_not_powered_on(false);
-
-    scale_.wait_ready(delay_ms);
-
-    return true;
+	while (!(hx711_powered_on() && scale_.is_ready())) {
+		// Probably will do no harm on AVR but will feed the Watchdog Timer (WDT) on ESP.
+		// https://github.com/bogde/HX711/issues/73
+		delay(delay_ms);
+	}
 }
 
 bool scale_wait_ready_retry(int retries, unsigned long delay_ms)
 {
-    scale_return_if_not_powered_on(false);
-
-    return scale_.wait_ready_retry(retries, delay_ms);
+	int count = 0;
+	while (count < retries) {
+		if (hx711_powered_on() && scale_.is_ready()) {
+			return true;
+		}
+		delay(delay_ms);
+		count++;
+	}
+	return false;
 }
 
 bool scale_wait_ready_timeout(unsigned long timeout, unsigned long delay_ms)
 {
-    scale_return_if_not_powered_on(false);
-
-    return scale_.wait_ready_timeout(timeout, delay_ms);
+	unsigned long millisStarted = millis();
+	while (millis() - millisStarted < timeout) {
+		if (hx711_powered_on() && scale_.is_ready()) {
+			return true;
+		}
+		delay(delay_ms);
+	}
+	return false;
 }
 
 long scale_read()
