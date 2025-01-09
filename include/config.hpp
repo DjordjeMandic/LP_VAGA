@@ -14,16 +14,16 @@
 #define DS3231_POWER_PIN 4
 #endif
 
-#ifndef GSM_POWER_PIN
-#define GSM_POWER_PIN 5
+#ifndef SIM800_POWER_PIN
+#define SIM800_POWER_PIN 5
 #endif
 
-#ifndef GSM_TX_PIN
-#define GSM_TX_PIN 6
+#ifndef SIM800_TX_PIN
+#define SIM800_TX_PIN 6
 #endif
 
-#ifndef GSM_RX_PIN
-#define GSM_RX_PIN 7
+#ifndef SIM800_RX_PIN
+#define SIM800_RX_PIN 7
 #endif
 
 #ifndef HX711_CLK_PIN

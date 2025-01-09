@@ -4,10 +4,11 @@
 #include <HX711.h>
 #include <power/hx711.hpp>
 #include <power/ds3231.hpp>
-#include <power/gsm.hpp>
+#include <power/sim800.hpp>
 #include <power/dht22.hpp>
 #include <module/scale.hpp>
 #include <module/dht.hpp>
+#include <module/rtc.hpp>
 #include <Serial.hpp>
 #include <RTClib.h>
 #include <DHT.h>
@@ -26,10 +27,11 @@
 bool user_scale_tare();
 bool user_scale_calibration();
 
+void power_all_off();
 
 void setup()
 {
-    gsm_power_off();
+    sim800_power_off();
     scale_end();
     dht_end();
     ds3231_power_off();
@@ -56,7 +58,7 @@ void setup()
     }
 
     scale_begin();
-    serial_enable();
+    serial_begin();
     serial_println(F("Start..."));
     while(!hx711_power_delay_check())
     {
@@ -88,6 +90,16 @@ void loop()
     scale_end();
     digitalWrite(LED_BUILTIN, LOW);
     LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);
+}
+
+void power_all_off()
+{
+    /* todo replace this with gsm_end */
+    sim800_power_off();
+    scale_end();
+    dht_end();
+    rtc_end();
+    serial_end();
 }
 
 bool user_scale_tare()

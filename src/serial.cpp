@@ -4,14 +4,14 @@
 
 bool serial_print_enabled_ = false;
 
-void serial_enable(unsigned long baudrate)
+void serial_begin(unsigned long baudrate)
 {
     uart_power_on();
     Serial.begin(baudrate);
     serial_print_enabled_ = true;
 }
 
-void serial_disable()
+void serial_end()
 {
     serial_print_enabled_ = false;
     Serial.end();
