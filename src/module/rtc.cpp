@@ -90,17 +90,19 @@ bool rtc_wakeup_alarm_fired()
     return rtc_.alarmFired(1);
 }
 
-DateTime rtc_get_wakeup_alarm()
-{
-    rtc_return_if_not_ready(DateTime());
+// /* TODO: implement if needed */
+// DateTime rtc_get_wakeup_alarm()
+// {
+//     rtc_return_if_not_ready(DateTime());
 
-    return rtc_.getAlarm1();
-}
+//     return rtc_.getAlarm1();
+// }
 
-Ds3231Alarm1Mode rtc_get_wakeup_alarm_mode()
-{
-    /* default if alarm mode cannot be read */
-    rtc_return_if_not_ready(Ds3231Alarm1Mode::DS3231_A1_Date);
+// /* TODO: implement if needed */
+// Ds3231Alarm1Mode rtc_get_wakeup_alarm_mode()
+// {
+//     /* default if alarm mode cannot be read */
+//     rtc_return_if_not_ready(Ds3231Alarm1Mode::DS3231_A1_Date);
 
-    return rtc_.getAlarm1Mode();
-}
+//     return rtc_.getAlarm1Mode();
+// }

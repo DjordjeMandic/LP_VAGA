@@ -23,7 +23,3 @@ bool rtc_adjust(const DateTime& dt);
 bool rtc_set_wakeup_alarm(const DateTime& dt, Ds3231Alarm1Mode alarm_mode);
 
 bool rtc_wakeup_alarm_fired();
-
-DateTime rtc_get_wakeup_alarm();
-
-Ds3231Alarm1Mode rtc_get_wakeup_alarm_mode();
