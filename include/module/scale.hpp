@@ -19,7 +19,9 @@ bool scale_wait_ready(unsigned long delay_ms = 0);
 
 bool scale_wait_ready_retry(int retries = 3, unsigned long delay_ms = 0);
 
-bool scale_wait_ready_timeout(unsigned long timeout = 1000, unsigned long delay_ms = 0);
+bool scale_wait_ready_timeout(unsigned long timeout = 1000 + HX711_POWER_DELAY_MS, unsigned long delay_ms = 0);
+
+bool scale_stabilize(uint16_t stabilization_time_ms = SCALE_STABILIZATION_TIME_MS);
 
 long scale_read();
 

@@ -13,15 +13,18 @@
 #include <DHT.h>
 
 
+#define BUTTON_PIN_MODE(BUTTON_ACTIVE_STATE) (BUTTON_ACTIVE_STATE == LOW ? INPUT_PULLUP : INPUT)
+#define BUTTON_PRESSED(BUTTON_PIN, BUTTON_ACTIVE_STATE) (digitalRead(BUTTON_PIN) == BUTTON_ACTIVE_STATE)
+
 // create function for calibration
 // create function for tare
 
+// create rtc module
 
+// todo use WDT sleep delay for unimportant delays
 
-// create struct
-
-
-void user_scale_calibration();
+bool user_scale_tare();
+bool user_scale_calibration();
 
 
 void setup()
@@ -33,6 +36,24 @@ void setup()
 
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, HIGH);
+
+    pinMode(BUTTON_CALIBRATE_PIN, BUTTON_PIN_MODE(BUTTON_CALIBRATE_PIN_ACTIVE_STATE));
+    pinMode(BUTTON_TARE_PIN, BUTTON_PIN_MODE(BUTTON_TARE_PIN_ACTIVE_STATE));
+
+    if (BUTTON_PRESSED(BUTTON_CALIBRATE_PIN, BUTTON_CALIBRATE_PIN_ACTIVE_STATE) ||
+        BUTTON_PRESSED(BUTTON_TARE_PIN, BUTTON_TARE_PIN_ACTIVE_STATE))
+    {
+        /* power on scale and init library */
+        scale_begin();
+        bool scale_status = true;
+
+        /* wait for scale to be ready, power on delay + 1000ms for first sample */
+        scale_status &= scale_wait_ready_timeout(HX711_POWER_DELAY_MS + 1000, 100);
+        
+        /* stabilize scale using dummy readings for 3 seconds */
+        scale_status &= scale_stabilize(3000);
+
+    }
 
     scale_begin();
     serial_enable();
@@ -69,7 +90,15 @@ void loop()
     LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);
 }
 
-void user_scale_calibration()
+bool user_scale_tare()
 {
-    scale_begin();
+
+}
+
+bool user_scale_calibration()
+{
+
+
+
+    return true;
 }
