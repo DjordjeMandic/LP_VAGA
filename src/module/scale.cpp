@@ -28,7 +28,7 @@ bool scale_ready()
 
 bool scale_wait_ready(unsigned long delay_ms)
 {
-	while (!(hx711_powered_on() && scale_.is_ready())) 
+	while (!scale_ready()) 
     {
 		delay(delay_ms);
 	}
@@ -39,7 +39,7 @@ bool scale_wait_ready_retry(int retries, unsigned long delay_ms)
 	int count = 0;
 	while (count < retries)
     {
-		if (hx711_powered_on() && scale_.is_ready())
+		if (scale_ready())
         {
 			return true;
 		}
@@ -54,7 +54,7 @@ bool scale_wait_ready_timeout(unsigned long timeout, unsigned long delay_ms)
 	unsigned long millisStarted = millis();
 	while (millis() - millisStarted < timeout)
     {
-		if (hx711_powered_on() && scale_.is_ready())
+		if (scale_ready())
         {
 			return true;
 		}
