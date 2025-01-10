@@ -1,9 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
-#ifndef ADC_AVCC_SAMPLES_DEFAULT
-#define ADC_AVCC_SAMPLES_DEFAULT 6
-#endif
+#include <config.hpp>
 
 void adc_begin();
 
@@ -11,7 +9,7 @@ void adc_end();
 
 uint16_t adc_sample();
 
-void adc_avcc_init();
+void adc_avcc_init(uint8_t stabilization_delay_ms = ADC_AVCC_REF_STABILIZATION_DELAY_MS);
 
 uint16_t adc_avcc_sample();
 

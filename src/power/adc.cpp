@@ -1,8 +1,6 @@
 #include <Arduino.h>
-#include <LowPower.h>
-#include <avr/sleep.h>
-#include <avr/power.h>
 #include <power/adc.hpp>
+#include <power/sleep.hpp>
 
 EMPTY_INTERRUPT (ADC_vect);
 
@@ -28,19 +26,12 @@ uint16_t adc_sample()
     return ADC;
 }
 
-void adc_avcc_init()
+void adc_avcc_init(uint8_t stabilization_delay_ms)
 {
     adc_begin();
     adc_avcc_mux_set();
     adc_sample();
-    LowPower.idle(SLEEP_15MS, /* sleep for 15 ms, no startup delay since clock won't be off */
-                ADC_ON, /* keep adc on */
-                TIMER2_ON, /* do not modify timer2 state */
-                TIMER1_ON, /* do not modify timer1 state */
-                TIMER0_OFF, /* turn off timer0 to prevent wakeup (used for micros() and millis()) */
-                SPI_ON, /* do not modify SPI state */
-                USART0_ON, /* do not modify USART0 state */
-                TWI_ON); /* do not modify TWI state */
+    sleep_timeout_millis(SLEEP_MODE_ADC, stabilization_delay_ms);
 }
 
 uint16_t adc_avcc_sample()
@@ -79,10 +70,7 @@ uint16_t adc_avcc_noise_reduced_sample()
     bitSet(ADCSRA, ADIF); // turn off any pending interrupt 
     bitSet(ADCSRA, ADSC); // Start the ADC conversion
 
-    do
-    {
-        LowPower.adcNoiseReduction(SLEEP_FOREVER, ADC_ON, TIMER2_OFF);
-    } while (bit_is_set(ADCSRA, ADSC)); // Sleep until ADC conversion is complete
+    sleep_while(SLEEP_MODE_ADC, bit_is_set(ADCSRA, ADSC));
 
     return ADC; // Return ADC result
 }
@@ -106,10 +94,7 @@ uint16_t adc_avcc_noise_reduced_sample_average(uint8_t samples)
     {
         bitSet(ADCSRA, ADSC); // Start the ADC conversion
 
-        do
-        {
-            LowPower.adcNoiseReduction(SLEEP_FOREVER, ADC_ON, TIMER2_OFF);
-        } while (bit_is_set(ADCSRA, ADSC)); // Sleep until ADC conversion is complete
+        sleep_while(SLEEP_MODE_ADC, bit_is_set(ADCSRA, ADSC));
 
         totalAdcReading += ADC;
     }
