@@ -1,0 +1,76 @@
+#pragma once
+
+#include <Arduino.h>
+
+/**
+ * @brief A templated class to manage the power states of devices with configurable power pins.
+ * 
+ * This class provides methods to power on/off devices, set pins to high-impedance (float),
+ * and check readiness based on a defined delay after power-on. Floating functionality can 
+ * be disabled for devices that must never float.
+ * 
+ * @tparam PowerPin The pin used to control power to the device.
+ * @tparam PowerPinStateOn The pin state (HIGH/LOW) to power on the device.
+ * @tparam PowerPinStateOff The pin state (HIGH/LOW) to power off the device.
+ * @tparam PowerDelayMs The delay time (in milliseconds) required after powering on the device before it can reliably operate.
+ * @tparam AllowFloat A boolean indicating whether the power pin can be set to a high-impedance state (true = allowed, false = disallowed).
+ */
+template <uint8_t PowerPin, uint8_t PowerPinStateOn, uint8_t PowerPinStateOff, unsigned long PowerDelayMs, bool AllowFloat = false>
+class DevicePowerManager
+{
+private:
+    static unsigned long power_on_millis_; /**< Stores the time when the device was last powered on. */
+
+public:
+    /**
+     * @brief Get the time (in milliseconds) when the device was last powered on.
+     * 
+     * @return The value of `millis()` when the device was powered on.
+     */
+    static unsigned long get_power_on_millis();
+
+    /**
+     * @brief Power off the device by setting the power pin to its OFF state.
+     */
+    static void power_off();
+
+    /**
+     * @brief Set the device power pin to a floating (high-impedance) state.
+     * 
+     * If floating is disabled (`AllowFloat = false`), this function will not be available
+     * and attempting to call it will result in a compile-time error.
+     */
+    static void power_float();
+
+    /**
+     * @brief Power on the device by setting the power pin to its ON state.
+     * 
+     * The time of power-on is recorded using `millis()`.
+     */
+    static void power_on();
+
+    /**
+     * @brief Check if the required delay time after powering on the device has elapsed.
+     * 
+     * @return `true` if the delay (defined by `PowerDelayMs`) has elapsed since 
+     * the device was powered on, otherwise `false`.
+     */
+    static bool power_delay_check();
+
+    /**
+     * @brief Check if the device is powered on and ready for use.
+     * 
+     * This function verifies that the power pin is in the ON state and that the 
+     * required delay time (`PowerDelayMs`) has elapsed since the device 
+     * was powered on.
+     * 
+     * @return `true` if the device is powered on and ready, otherwise `false`.
+     */
+    static bool powered_on();
+};
+
+// Define the static variable for the template
+template <uint8_t PowerPin, uint8_t PowerPinStateOn, uint8_t PowerPinStateOff, unsigned long PowerDelayMs, bool AllowFloat>
+unsigned long DevicePowerManager<PowerPin, PowerPinStateOn, PowerPinStateOff, PowerDelayMs, AllowFloat>::power_on_millis_ = 0;
+
+#include <power/manager.tpp> // Include the template definitions
