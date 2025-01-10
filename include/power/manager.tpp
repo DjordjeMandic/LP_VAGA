@@ -19,6 +19,11 @@ void DevicePowerManager<PowerPin, PowerPinStateOn, PowerPinStateOff, PowerDelayM
 template <uint8_t PowerPin, uint8_t PowerPinStateOn, uint8_t PowerPinStateOff, unsigned long PowerDelayMs, bool AllowFloat>
 void DevicePowerManager<PowerPin, PowerPinStateOn, PowerPinStateOff, PowerDelayMs, AllowFloat>::power_on()
 {
+    if (PowerPinStateOn == HIGH)
+    {
+        pinMode(PowerPin, INPUT_PULLUP);
+        delay(1);
+    }
     pinMode(PowerPin, OUTPUT);
     digitalWrite(PowerPin, PowerPinStateOn);
     power_on_millis_ = millis();

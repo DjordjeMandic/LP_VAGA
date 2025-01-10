@@ -2,16 +2,16 @@
 #include <HX711.h>
 #include <module/scale.hpp>
 #include <power/hx711.hpp>
-#include <power/delay.hpp>
+#include <power/sleep.hpp>
 #include <Config.hpp>
 
 static HX711 scale_;
 
 void scale_begin()
 {
-    hx711_power_off();
+    HX711PowerManager::power_off();
     delay(1);
-    hx711_power_on();
+    HX711PowerManager::power_on();
     scale_.begin(HX711_DOUT_PIN, HX711_CLK_PIN, HX711_GAIN_FACTOR);
 }
 
@@ -19,23 +19,21 @@ void scale_end()
 {
     pinMode(HX711_DOUT_PIN, INPUT);
     pinMode(HX711_CLK_PIN, INPUT);
-    hx711_power_off();
+    HX711PowerManager::power_off();
 }
 
 bool scale_ready()
 {
-    return hx711_powered_on() && scale_.is_ready();
+    return HX711PowerManager::powered_on() && scale_.is_ready();
 }
 
 bool scale_wait_ready()
-{    
-	while (!scale_ready()) 
-    {
-		delay_95ms_power_down_adc_off_bod_on();
-	}
+{
+    /* Timer0 ISR runs every 1024us */
+    sleep_until(SLEEP_MODE_IDLE, scale_ready());
 }
 
-bool scale_wait_ready_retry(int retries)
+bool scale_wait_ready_retry(int retries, unsigned long delay_ms)
 {
     int count = 0;
 
@@ -46,8 +44,7 @@ bool scale_wait_ready_retry(int retries)
             return true;
         }
 
-        // Use 95ms power-down delay intervals
-        delay_95ms_power_down_adc_off_bod_on();
+        sleep_idle_timeout_millis(delay_ms);
         count++;
     }
 
@@ -55,23 +52,20 @@ bool scale_wait_ready_retry(int retries)
 }
 
 
-bool scale_wait_ready_timeout(unsigned long timeout)
+bool scale_wait_ready_timeout(unsigned long timeout, unsigned long delay_ms)
 {
-    unsigned long elapsedTime = 0;
-
-    while (elapsedTime < timeout)
+	unsigned long millisStarted = millis();
+	while (millis() - millisStarted < timeout)
     {
-        if (scale_ready())
+		if (scale_ready())
         {
-            return true;
-        }
+			return true;
+		}
 
-        // Use 95ms delay intervals
-        delay_95ms_power_down_adc_off_bod_on();
-        elapsedTime += 95;
-    }
-
-    return false; // Timeout occurred
+        /* Timer0 ISR runs every 1024us */
+		sleep_while(SLEEP_MODE_IDLE, false);
+	}
+	return false;
 }
 
 bool scale_stabilize(uint16_t stabilization_time_ms)
@@ -88,7 +82,7 @@ bool scale_stabilize(uint16_t stabilization_time_ms)
             scale_read(); // Perform the scale reading
 
             /* Sample rate is 10Hz (100ms) */
-            delay_95ms_power_down_adc_off_bod_on(); // Sleep for 95ms
+            sleep_power_down_95ms_adc_off_bod_on();
             elapsedTime += 95;
         }
     }

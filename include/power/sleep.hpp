@@ -11,9 +11,13 @@
  * and puts the microcontroller to sleep. It continues looping in sleep mode until the specified 
  * condition becomes false.
  * 
+ * In `SLEEP_MODE_IDLE`, Timer0 continues to run if it is enabled, and its overflow interrupt 
+ * is fired approximately every 1024 microseconds (~1ms).
+ * 
  * @param[in] mode The desired sleep mode (e.g., `SLEEP_MODE_IDLE`, `SLEEP_MODE_ADC`).
  * @param[in] condition The condition to continue sleeping. The loop will exit when this condition becomes false.
  */
+
 #define sleep_while(mode, condition)    \
 do {                                    \
       set_sleep_mode(mode);             \

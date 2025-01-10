@@ -2,3 +2,5 @@
 #include <power/sim800.hpp>
 
 static bool gsm_got_network_ = false;
+
+#warning GSM not implemented

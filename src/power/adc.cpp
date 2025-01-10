@@ -2,7 +2,7 @@
 #include <power/adc.hpp>
 #include <power/sleep.hpp>
 
-/* ADC conversion complete interrupt */
+/* Empty ADC conversion complete interrupt to clear ADC interrupt flag (ADIF) */
 EMPTY_INTERRUPT (ADC_vect);
 
 /* AVcc as reference and Vbg as input */
@@ -12,7 +12,7 @@ void adc_begin()
 {
     power_adc_enable();
 
-    /* 8 MHz / 64 = 125 KHz */
+    /* ADC clock: 8 MHz / 64 = 125 KHz */
     ADCSRA = _BV(ADPS2) | _BV(ADPS1) | _BV(ADEN);
 
     /* External reference connected to AREF pin and GND channel */
@@ -38,8 +38,14 @@ uint16_t adc_sample()
     /* Start the ADC conversion, ADSC will be cleared once done */
     bitSet(ADCSRA, ADSC);
 
+    /* Enable ADC conversion complete interrupt to wake from SLEEP_MODE_ADC */
+    bitSet(ADCSRA, ADIE);
+    
     /* Sleep until the conversion finishes (ADSC is cleared) */
     sleep_while(SLEEP_MODE_ADC, bit_is_set(ADCSRA, ADSC));
+
+    /* Disable ADC conversion complete interrupt */
+    bitClear(ADCSRA, ADIE);
 
     return ADC;
 }
@@ -53,7 +59,7 @@ void adc_avcc_init(uint8_t stabilization_delay_ms)
     adc_sample();
 
     /* Wait for Vref to stabilize */
-    sleep_timeout_millis(SLEEP_MODE_ADC, stabilization_delay_ms);
+    sleep_idle_timeout_millis(stabilization_delay_ms);
 }
 
 uint16_t adc_avcc_sample()

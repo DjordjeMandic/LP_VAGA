@@ -3,7 +3,7 @@
 #include <Arduino.h>
 #include <power/dht22.hpp>
 
-#define dht_return_if_not_powered_on(x) { if (!dht22_powered_on()) { return x; } }
+#define dht_return_if_not_powered_on(x) { if (!DHT22PowerManager::powered_on()) { return x; } }
 
 void dht_begin(uint8_t pullup_time_us = 55);
 

@@ -14,9 +14,9 @@ static bool rtclib_begin_result_ = false;
 
 void rtc_pre_begin_power_on()
 {
-    ds3231_power_off();
+    DS3231PowerManager::power_off();
     delay(1);
-    ds3231_power_on();
+    DS3231PowerManager::power_on();
     twi_power_on();
     Wire.begin();
 }
@@ -43,14 +43,14 @@ bool rtc_begin()
 
 bool rtc_ready()
 {
-    return ds3231_powered_on() && rtclib_begin_result_;
+    return DS3231PowerManager::powered_on() && rtclib_begin_result_;
 }
 
 void rtc_end()
 {
     Wire.end();
     twi_power_off();
-    ds3231_power_off();
+    DS3231PowerManager::power_off();
 }
 
 bool rtc_lost_power()
@@ -89,20 +89,3 @@ bool rtc_wakeup_alarm_fired()
 
     return rtc_.alarmFired(1);
 }
-
-// /* TODO: implement if needed */
-// DateTime rtc_get_wakeup_alarm()
-// {
-//     rtc_return_if_not_ready(DateTime());
-
-//     return rtc_.getAlarm1();
-// }
-
-// /* TODO: implement if needed */
-// Ds3231Alarm1Mode rtc_get_wakeup_alarm_mode()
-// {
-//     /* default if alarm mode cannot be read */
-//     rtc_return_if_not_ready(Ds3231Alarm1Mode::DS3231_A1_Date);
-
-//     return rtc_.getAlarm1Mode();
-// }

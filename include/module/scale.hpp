@@ -5,7 +5,7 @@
 
 #warning Stabilizing time of 3-5 seconds should be included (keep reading at 10hz for 3-5 seconds constantly)
 
-#define scale_return_if_not_powered_on(x) { if (!hx711_powered_on()) { return x; } }
+#define scale_return_if_not_powered_on(x) { if (!HX711PowerManager::powered_on()) { return x; } }
 #define scale_return_if_not_ready(x) { if (!scale_ready()) { return x; } }
 
 #define SCALE_STABILIZATION_TIME_MS 3000

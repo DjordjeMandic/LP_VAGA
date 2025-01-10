@@ -8,21 +8,21 @@ static DHT dht(DHT22_DATA_PIN, DHT_TYPE);
 
 void dht_begin(uint8_t pullup_time_us)
 {
-    dht22_power_off();
+    DHT22PowerManager::power_off();
     delay(1);
-    dht22_power_on();
+    DHT22PowerManager::power_on();
     dht.begin(pullup_time_us);
 }
 
 void dht_end()
 {
     pinMode(DHT22_DATA_PIN, INPUT);
-    dht22_power_off();
+    DHT22PowerManager::power_off();
 }
 
 bool dht_ready()
 {
-    return dht22_powered_on() && dht.read();
+    return DHT22PowerManager::powered_on() && dht.read();
 }
 
 bool dht_read(bool force)
