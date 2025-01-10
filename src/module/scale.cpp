@@ -27,8 +27,8 @@ bool scale_ready()
     return hx711_powered_on() && scale_.is_ready();
 }
 
-bool scale_wait_ready(unsigned long delay_ms)
-{
+bool scale_wait_ready()
+{    
 	while (!scale_ready()) 
     {
 		delay_95ms_power_down_adc_off_bod_on();
