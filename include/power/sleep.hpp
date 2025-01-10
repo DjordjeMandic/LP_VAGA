@@ -47,3 +47,123 @@ do {                                    \
  * @param sleep_time_ms The duration to sleep, in milliseconds.
  */
 void sleep_idle_timeout_millis(unsigned long sleep_time_ms);
+
+/**
+ * @brief Sleep for 80ms in power-down mode with ADC off and BOD on.
+ * 
+ * This includes 65ms startup time for the external full-swing crystal and 
+ * the remaining time (15ms) is the WDT timeout, which is inaccurate.
+ * During this time, Timer0 is not running, so `millis()` and `micros()` 
+ * will not be updated. Before entering sleep, this function calls 
+ * `serial_flush()` to check if the serial is enabled and flushes the 
+ * serial buffer if necessary.
+ */
+void sleep_power_down_80ms_adc_off_bod_on();
+
+/**
+ * @brief Sleep for 95ms in power-down mode with ADC off and BOD on.
+ * 
+ * This includes 65ms startup time for the external full-swing crystal and 
+ * the remaining time (30ms) is the WDT timeout, which is inaccurate.
+ * During this time, Timer0 is not running, so `millis()` and `micros()` 
+ * will not be updated. Before entering sleep, this function calls 
+ * `serial_flush()` to check if the serial is enabled and flushes the 
+ * serial buffer if necessary.
+ */
+void sleep_power_down_95ms_adc_off_bod_on();
+
+/**
+ * @brief Sleep for 125ms in power-down mode with ADC off and BOD on.
+ * 
+ * This includes 65ms startup time for the external full-swing crystal and 
+ * the remaining time (60ms) is the WDT timeout, which is inaccurate.
+ * During this time, Timer0 is not running, so `millis()` and `micros()` 
+ * will not be updated. Before entering sleep, this function calls 
+ * `serial_flush()` to check if the serial is enabled and flushes the 
+ * serial buffer if necessary.
+ */
+void sleep_power_down_125ms_adc_off_bod_on();
+
+/**
+ * @brief Sleep for 185ms in power-down mode with ADC off and BOD on.
+ * 
+ * This includes 65ms startup time for the external full-swing crystal and 
+ * the remaining time (120ms) is the WDT timeout, which is inaccurate.
+ * During this time, Timer0 is not running, so `millis()` and `micros()` 
+ * will not be updated. Before entering sleep, this function calls 
+ * `serial_flush()` to check if the serial is enabled and flushes the 
+ * serial buffer if necessary.
+ */
+void sleep_power_down_185ms_adc_off_bod_on();
+
+/**
+ * @brief Sleep for 315ms in power-down mode with ADC off and BOD on.
+ * 
+ * This includes 65ms startup time for the external full-swing crystal and 
+ * the remaining time (250ms) is the WDT timeout, which is inaccurate.
+ * During this time, Timer0 is not running, so `millis()` and `micros()` 
+ * will not be updated. Before entering sleep, this function calls 
+ * `serial_flush()` to check if the serial is enabled and flushes the 
+ * serial buffer if necessary.
+ */
+void sleep_power_down_315ms_adc_off_bod_on();
+
+/**
+ * @brief Sleep for 565ms in power-down mode with ADC off and BOD on.
+ * 
+ * This includes 65ms startup time for the external full-swing crystal and 
+ * the remaining time (500ms) is the WDT timeout, which is inaccurate.
+ * During this time, Timer0 is not running, so `millis()` and `micros()` 
+ * will not be updated. Before entering sleep, this function calls 
+ * `serial_flush()` to check if the serial is enabled and flushes the 
+ * serial buffer if necessary.
+ */
+void sleep_power_down_565ms_adc_off_bod_on();
+
+/**
+ * @brief Sleep for 1065ms in power-down mode with ADC off and BOD on.
+ * 
+ * This includes 65ms startup time for the external full-swing crystal and 
+ * the remaining time (1000ms) is the WDT timeout, which is inaccurate.
+ * During this time, Timer0 is not running, so `millis()` and `micros()` 
+ * will not be updated. Before entering sleep, this function calls 
+ * `serial_flush()` to check if the serial is enabled and flushes the 
+ * serial buffer if necessary.
+ */
+void sleep_power_down_1065ms_adc_off_bod_on();
+
+/**
+ * @brief Sleep for 2065ms in power-down mode with ADC off and BOD on.
+ * 
+ * This includes 65ms startup time for the external full-swing crystal and 
+ * the remaining time (2000ms) is the WDT timeout, which is inaccurate.
+ * During this time, Timer0 is not running, so `millis()` and `micros()` 
+ * will not be updated. Before entering sleep, this function calls 
+ * `serial_flush()` to check if the serial is enabled and flushes the 
+ * serial buffer if necessary.
+ */
+void sleep_power_down_2065ms_adc_off_bod_on();
+
+/**
+ * @brief Sleep for 4065ms in power-down mode with ADC off and BOD on.
+ * 
+ * This includes 65ms startup time for the external full-swing crystal and 
+ * the remaining time (4000ms) is the WDT timeout, which is inaccurate.
+ * During this time, Timer0 is not running, so `millis()` and `micros()` 
+ * will not be updated. Before entering sleep, this function calls 
+ * `serial_flush()` to check if the serial is enabled and flushes the 
+ * serial buffer if necessary.
+ */
+void sleep_power_down_4065ms_adc_off_bod_on();
+
+/**
+ * @brief Sleep for 8065ms in power-down mode with ADC off and BOD on.
+ * 
+ * This includes 65ms startup time for the external full-swing crystal and 
+ * the remaining time (8000ms) is the WDT timeout, which is inaccurate.
+ * During this time, Timer0 is not running, so `millis()` and `micros()` 
+ * will not be updated. Before entering sleep, this function calls 
+ * `serial_flush()` to check if the serial is enabled and flushes the 
+ * serial buffer if necessary.
+ */
+void sleep_power_down_8065ms_adc_off_bod_on();
