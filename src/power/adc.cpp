@@ -28,12 +28,19 @@ uint16_t adc_sample()
     return ADC;
 }
 
-void adc_avcc_init(uint8_t stabilization_delay_ms)
+void adc_avcc_init()
 {
     adc_begin();
     adc_avcc_mux_set();
     adc_sample();
-    delay(stabilization_delay_ms);
+    LowPower.idle(SLEEP_15MS, /* sleep for 15 ms, no startup delay since clock won't be off */
+                ADC_ON, /* keep adc on */
+                TIMER2_ON, /* do not modify timer2 state */
+                TIMER1_ON, /* do not modify timer1 state */
+                TIMER0_OFF, /* turn off timer0 to prevent wakeup (used for micros() and millis()) */
+                SPI_ON, /* do not modify SPI state */
+                USART0_ON, /* do not modify USART0 state */
+                TWI_ON); /* do not modify TWI state */
 }
 
 uint16_t adc_avcc_sample()
