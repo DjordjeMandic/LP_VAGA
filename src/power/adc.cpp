@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <LowPower.h>
 #include <avr/sleep.h>
 #include <avr/power.h>
 #include <power/adc.hpp>
@@ -68,31 +69,14 @@ uint16_t adc_avcc_noise_reduced_sample()
     adc_avcc_mux_set();
     adc_sample();
 
-    volatile uint8_t TCCR0B_old = TCCR0B; // save timer state
-    noInterrupts();
-    TCCR0B = 0; // disable timer 0
-
-    bitClear(TIMSK0, TOIE0); // disable timer 0 overflow interrupt
-
-    bitSet(TIFR0, TOV0); // clear timer 0 overflow interrupt flag
     bitSet(ADCSRA, ADIF); // turn off any pending interrupt 
-
-    set_sleep_mode (SLEEP_MODE_ADC);    // sleep during sample
-
     bitSet(ADCSRA, ADSC); // Start the ADC conversion
 
     do
     {
-        interrupts();
-        sleep_enable();  
-        sleep_cpu();     
-        sleep_disable();
-        noInterrupts();
+        LowPower.adcNoiseReduction(SLEEP_FOREVER, ADC_ON, TIMER2_OFF);
     } while (bit_is_set(ADCSRA, ADSC)); // Sleep until ADC conversion is complete
 
-    TCCR0B = TCCR0B_old; // restore timer 0
-    bitSet(TIMSK0, TOIE0); // enable timer 0 overflow interrupt
-    interrupts();
     return ADC; // Return ADC result
 }
 
@@ -102,22 +86,14 @@ uint16_t adc_avcc_noise_reduced_sample_average(uint8_t samples)
     {
         samples++;
     }
+
     uint32_t totalAdcReading = 0;
 
     // Set adc mux and do one dummy sample
     adc_avcc_mux_set();
     adc_sample();
 
-    volatile uint8_t TCCR0B_old = TCCR0B; // save timer state
-    noInterrupts();
-    TCCR0B = 0; // disable timer 0
-
-    bitClear(TIMSK0, TOIE0); // disable timer 0 overflow interrupt
-
-    bitSet(TIFR0, TOV0); // clear timer 0 overflow interrupt flag
     bitSet(ADCSRA, ADIF); // turn off any pending interrupt 
-
-    set_sleep_mode (SLEEP_MODE_ADC);    // sleep during sample
 
     for (uint8_t i = 0; i < samples; i++)
     {
@@ -125,18 +101,11 @@ uint16_t adc_avcc_noise_reduced_sample_average(uint8_t samples)
 
         do
         {
-            interrupts();
-            sleep_enable();  
-            sleep_cpu();     
-            sleep_disable();
-            noInterrupts();
+            LowPower.adcNoiseReduction(SLEEP_FOREVER, ADC_ON, TIMER2_OFF);
         } while (bit_is_set(ADCSRA, ADSC)); // Sleep until ADC conversion is complete
 
         totalAdcReading += ADC;
     }
 
-    TCCR0B = TCCR0B_old; // restore timer 0
-    bitSet(TIMSK0, TOIE0); // enable timer 0 overflow interrupt
-    interrupts();
     return (totalAdcReading + (samples / 2)) / samples; // Return ADC result
 }
