@@ -2,6 +2,7 @@
 #include <HX711.h>
 #include <module/scale.hpp>
 #include <power/hx711.hpp>
+#include <power/delay.hpp>
 #include <Config.hpp>
 
 static HX711 scale_;
@@ -30,51 +31,69 @@ bool scale_wait_ready(unsigned long delay_ms)
 {
 	while (!scale_ready()) 
     {
-		delay(delay_ms);
+		delay_95ms_power_down_adc_off_bod_on();
 	}
 }
 
-bool scale_wait_ready_retry(int retries, unsigned long delay_ms)
+bool scale_wait_ready_retry(int retries)
 {
-	int count = 0;
-	while (count < retries)
+    int count = 0;
+
+    while (count < retries)
     {
-		if (scale_ready())
+        if (scale_ready())
         {
-			return true;
-		}
-		delay(delay_ms);
-		count++;
-	}
-	return false;
+            return true;
+        }
+
+        // Use 95ms power-down delay intervals
+        delay_95ms_power_down_adc_off_bod_on();
+        count++;
+    }
+
+    return false; // Retries exhausted
 }
 
-bool scale_wait_ready_timeout(unsigned long timeout, unsigned long delay_ms)
+
+bool scale_wait_ready_timeout(unsigned long timeout)
 {
-	unsigned long millisStarted = millis();
-	while (millis() - millisStarted < timeout)
+    unsigned long elapsedTime = 0;
+
+    while (elapsedTime < timeout)
     {
-		if (scale_ready())
+        if (scale_ready())
         {
-			return true;
-		}
-		delay(delay_ms);
-	}
-	return false;
+            return true;
+        }
+
+        // Use 95ms delay intervals
+        delay_95ms_power_down_adc_off_bod_on();
+        elapsedTime += 95;
+    }
+
+    return false; // Timeout occurred
 }
 
 bool scale_stabilize(uint16_t stabilization_time_ms)
 {
     scale_return_if_not_powered_on(false);
 
-	unsigned long millisStarted = millis();
-	while (millis() - millisStarted < stabilization_time_ms)
+    if (stabilization_time_ms > 0)
     {
-		scale_read();
-		delay(100); // 10 SPS
-	}
-    
-	return true;
+        unsigned long elapsedTime = 0;
+
+        while (elapsedTime < stabilization_time_ms)
+        {
+            /* If sample is not ready, scale will wait for it in blocking active loop */
+            scale_read(); // Perform the scale reading
+
+            /* Sample rate is 10Hz (100ms) */
+            delay_95ms_power_down_adc_off_bod_on(); // Sleep for 95ms
+            elapsedTime += 95;
+        }
+    }
+
+    return true;
 }
 
 long scale_read()
