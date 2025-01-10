@@ -2,6 +2,14 @@
 
 #include <Arduino.h>
 
+#ifndef ADC_AVCC_SAMPLES_DEFAULT
+#define ADC_AVCC_SAMPLES_DEFAULT 6
+#endif
+
+#ifndef ADC_AVCC_REF_STABILIZATION_DELAY_MS
+#define ADC_AVCC_REF_STABILIZATION_DELAY_MS 15
+#endif
+
 #ifndef SERIAL_BAUD
 #define SERIAL_BAUD 38400
 #endif
