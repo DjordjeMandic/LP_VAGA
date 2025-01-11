@@ -190,7 +190,7 @@ long HX711::read() {
 	return static_cast<long>(value);
 }
 
-void HX711::wait_ready(unsigned long delay_ms) {
+void HX711::wait_ready() {
 	// Wait for the chip to become ready.
 	// This is a blocking implementation and will
 	// halt the sketch until a load cell is connected.

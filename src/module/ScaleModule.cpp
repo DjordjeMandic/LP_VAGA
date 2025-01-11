@@ -30,8 +30,15 @@ bool ScaleModule::ready()
 
 bool ScaleModule::waitReady()
 {
+    if (!HX711PowerManager::poweredOn())
+    {
+        return false;
+    }
+    
     /* Timer0 ISR runs every 1024us */
     sleep_until(SLEEP_MODE_IDLE, ScaleModule::ready());
+
+    return true;
 }
 
 bool ScaleModule::waitReadyRetry(const int retries, const unsigned long delay_ms)
