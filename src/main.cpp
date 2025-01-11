@@ -24,6 +24,9 @@
 #define builtin_led_off() { digitalWrite(LED_BUILTIN, LOW); }
 #define builtin_led_toggle() { digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN)); }
 
+#define RESULT_SUCCESS true
+#define RESULT_FAILURE false
+
 
 // create function for calibration
 // create function for tare
@@ -34,7 +37,7 @@
 
 void power_all_off();
 
-void show_result_final_block(bool success = false);
+void show_setup_result_final_block(bool success = false);
 
 float calculate_supply_voltage(uint16_t adc_value, uint16_t reference_voltage = 1100);
 
@@ -46,34 +49,39 @@ void setup()
 {
     power_all_off();
 
+    /* configure buttons */
     pinMode(BUTTON_CALIBRATE_PIN, BUTTON_PIN_MODE(BUTTON_CALIBRATE_PIN_ACTIVE_STATE));
     pinMode(BUTTON_TARE_PIN, BUTTON_PIN_MODE(BUTTON_TARE_PIN_ACTIVE_STATE));
     pinMode(BUTTON_INTERNAL_REFERENCE_SET_PIN, BUTTON_PIN_MODE(BUTTON_INTERNAL_REFERENCE_SET_PIN_ACTIVE_STATE));
+    pinMode(BUTTON_TIMER_MODE_PIN, BUTTON_PIN_MODE(BUTTON_TIMER_MODE_PIN_ACTIVE_STATE));
 
     /* set baud rate in Config.hpp */
     serial_begin();
     Serial.println(F("Starting"));
 
+    /* alive signal */
     builtin_led_on();
 
+    /* read buttons */
     bool calibrate_button_pressed = BUTTON_PRESSED(BUTTON_CALIBRATE_PIN, BUTTON_CALIBRATE_PIN_ACTIVE_STATE);
     bool tare_button_pressed      = BUTTON_PRESSED(BUTTON_TARE_PIN, BUTTON_TARE_PIN_ACTIVE_STATE);
     bool internal_reference_set_button_pressed = BUTTON_PRESSED(BUTTON_INTERNAL_REFERENCE_SET_PIN, BUTTON_INTERNAL_REFERENCE_SET_PIN_ACTIVE_STATE);
     timer_mode_button_pressed_on_boot = BUTTON_PRESSED(BUTTON_TIMER_MODE_PIN, BUTTON_TIMER_MODE_PIN_ACTIVE_STATE);
 
+    /* count number of pressed buttons */
     uint8_t button_pressed_count = calibrate_button_pressed + tare_button_pressed + internal_reference_set_button_pressed + timer_mode_button_pressed_on_boot;
 
+    /* if multiple buttons are pressed, block */
     if (button_pressed_count > 1)
     {
-        /* multiple buttons pressed, block */
         Serial.println(F("Multiple buttons pressed"));
-        show_result_final_block(false);
+        show_setup_result_final_block(RESULT_FAILURE);
     }
 
-    /* calibrate internal adc reference */
+    /* calibrate internal adc reference if requested */
     if (internal_reference_set_button_pressed)
     {
-        /* set internal reference */
+        /* initialize adc for internal reference calibration */
         ADCHelper::refBGInit();
 
         Serial.println(F("Reference calibration: Enter voltage in milivolts on AREF pin."));
@@ -81,6 +89,9 @@ void setup()
         String input = "";
         bool inputComplete = false;
         unsigned long startTime = millis();
+
+        /* indicate start of procedure */
+        builtin_led_off();
 
         /* wait for user to input the voltage */
         do
@@ -93,7 +104,7 @@ void setup()
                     input.trim();
                     inputComplete = true;
 
-                    // Flush rest of the buffer
+                    /* flush rest of the buffer */
                     while (Serial.available() > 0) 
                     {
                         Serial.read();
@@ -103,11 +114,15 @@ void setup()
                 input += c;
             }
 
+            /* heartbeat led and serial prompt */
             if (millis() - startTime >= 3000)
             {
                 Serial.println(F("Enter AREF voltage in milivolts: "));
-
                 startTime = millis();
+
+                builtin_led_on();
+                sleep_idle_timeout_millis(100);
+                builtin_led_off();
             }
         } while (!inputComplete);
 
@@ -118,7 +133,7 @@ void setup()
         Serial.print(inputLong);
         Serial.println(F(" mV"));
 
-        /* set internal reference if valid */
+        /* set internal reference if within range */
         if ((inputLong < 900 || inputLong > 1300))
         {
             /* save to EEPROM */
@@ -134,16 +149,17 @@ void setup()
             Serial.print(supply_voltage, 3);
             Serial.println(F(" V"));
 
-            show_result_final_block(true);
+            show_setup_result_final_block(RESULT_SUCCESS);
         }
 
         /* input is invalid */
-        show_result_final_block(false);
+        show_setup_result_final_block(RESULT_FAILURE);
     }
 
     /* check avcc voltage, power down if too low for modules to work */
     float supply_voltage = get_supply_voltage();
-    if (supply_voltage < AVCC_MIN_VOLTAGE)
+
+    if (supply_voltage <= AVCC_MIN_VOLTAGE)
     {
         Serial.print(F("AVCC voltage too low: "));
         Serial.print(supply_voltage, 3);
@@ -152,46 +168,51 @@ void setup()
         Serial.println(F(" V"));
 
         /* power down with led blinking */
-        show_result_final_block(false);
+        show_setup_result_final_block(RESULT_FAILURE);
     }
 
-    /* calibrate or tare scale */
+    /* self test hx711 */
+    Serial.println(F("HX711 initializing"));
+
+    /* power on scale and init library */
+    ScaleModule::begin();
+    bool scale_status = true;
+
+    /* wait for scale to be ready */
+    scale_status &= ScaleModule::waitReadyTimeout();
+    
+    /* perform scale stabilization only if scale is ready */
+    if (scale_status)
+    {
+        Serial.println(F("HX711 stabilizing"));
+
+        /* stabilize scale using dummy readings */
+        scale_status &= ScaleModule::stabilize();
+    }
+
+    if (!scale_status)
+    {
+        /* failed to stabilize scale, block */
+        show_setup_result_final_block(RESULT_FAILURE);
+    }
+
+    /* calibrate or tare scale if requested */
     if (calibrate_button_pressed || tare_button_pressed)
     {
         Serial.println(F("Calibrate or tare operation requested"));
-        Serial.println(F("HX711 initializing"));
 
-        /* power on scale and init library */
-        ScaleModule::begin();
-        bool scale_status = true;
-
-        /* wait for scale to be ready */
-        scale_status &= ScaleModule::waitReadyTimeout();
-
+        /* indicate start of procedure */
         builtin_led_off();
-        
-        /* perform scale stabilization only if scale is ready */
-        if (scale_status)
-        {
-            Serial.println(F("HX711 stabilizing"));
 
-            /* stabilize scale using dummy readings */
-            scale_status &= ScaleModule::stabilize();
-        }
+        Serial.println(F("HX711 taring"));
 
-        /* perform tare only if scale is stabilized */
-        if (scale_status)
-        {
-            Serial.println(F("HX711 taring"));
-
-            /* tare operation is required anyways for calibration */
-            scale_status &= ScaleModule::tare();
-        }
+        /* tare operation is required anyways for calibration */
+        scale_status &= ScaleModule::tare();
 
         if (!scale_status)
         {
             /* failed to setup scale, block */
-            show_result_final_block(false);
+            show_setup_result_final_block(RESULT_FAILURE);
         }
 
         /* save new tare offset */
@@ -208,7 +229,7 @@ void setup()
             Serial.println(F("Only tare operation requested"));
 
             /* operation successful */
-            show_result_final_block(true);
+            show_setup_result_final_block(RESULT_SUCCESS);
         }
 
         if (calibrate_button_pressed)
@@ -218,17 +239,11 @@ void setup()
 
             float known_mass_kg = SCALE_CALIBRATION_KNOWN_MASS_KG;
 
-            /* sleep for 2 seconds */
-            sleep_power_down_2065ms_adc_off_bod_on();
-
-            /* wait for user to release calibrate button if not released yet */
-            sleep_while(SLEEP_MODE_IDLE, BUTTON_PRESSED(BUTTON_CALIBRATE_PIN, BUTTON_CALIBRATE_PIN_ACTIVE_STATE));
-
             /* wait for user to place known weight and press calibrate button */
             do
             {
 
-                Serial.print(F("Press calibrate button after "));
+                Serial.print(F("Press tare button after "));
                 Serial.print(known_mass_kg, 0);
                 Serial.println(F(" kg weight is placed"));
 
@@ -236,31 +251,37 @@ void setup()
                 sleep_power_down_185ms_adc_off_bod_on();
                 builtin_led_off();
                 sleep_power_down_1065ms_adc_off_bod_on();
-            } while (!BUTTON_PRESSED(BUTTON_CALIBRATE_PIN, BUTTON_CALIBRATE_PIN_ACTIVE_STATE));
-            
-            // Call setScale() with no parameter.
-            // Call tare() with no parameter.
-            // Place a known weight on the scale and call getUnits(10).
-            // Divide the result in step 3 to your known weight. You should get about the parameter you need to pass to setScale().
-            // Adjust the parameter in step 4 until you get an accurate reading.
+            } while (!BUTTON_PRESSED(BUTTON_TARE_PIN, BUTTON_TARE_PIN_ACTIVE_STATE));
 
             /* set scale factor to 1 */
             ScaleModule::setScale(1.0f);
 
+            /* measure and calculate new scale factor */
             float new_scale_factor = ScaleModule::getUnits(10) / known_mass_kg;
 
+            /* save new scale factor to EEPROM */
             DataEEPROM::setScaleCalibrationValue(new_scale_factor);
 
             Serial.print(F("Saved scale factor: "));
             Serial.println(new_scale_factor);
 
+            /* Apply new scale factor */
+            ScaleModule::setScale(new_scale_factor);
+
+            /* measure again with new scale factor */
+            float measured_mass_kg = ScaleModule::getUnits(10);
+
+            Serial.print(F("Measured mass: "));
+            Serial.print(measured_mass_kg, 3);
+            Serial.println(F(" kg"));
+
             /* block end of calibration */
-            show_result_final_block(true);
+            show_setup_result_final_block(RESULT_SUCCESS);
         }
 
         /* operation unknown */
         Serial.println(F("Unknown scale operation"));
-        show_result_final_block(false);
+        show_setup_result_final_block(RESULT_FAILURE);
     }
 
     Serial.println(F("RTC initializing"));
@@ -272,7 +293,7 @@ void setup()
     if (!RTCModule::begin())
     {
         /* failed to setup rtc, power down with led blinking */
-        show_result_final_block(false);
+        show_setup_result_final_block(RESULT_FAILURE);
     }
 
     if (RTCModule::lostPower())
@@ -283,21 +304,42 @@ void setup()
             Serial.println(F("Power loss detected. Set the clock or use timer mode"));
 
             /* power down with led blinking */
-            show_result_final_block(false);
+            show_setup_result_final_block(RESULT_FAILURE);
         }
 
         /* timer mode button is pressed on boot */
 
-        Serial.println(F("Adjusting time to 2025-01-01 00:00:00"));
+        Serial.println(F("Timer mode enabled. Set time to 01-Jan-2025 00:00:00"));
 
-        DateTime dt = DateTime(2025, 1, 1, 0, 0, 0);
-
-        if (!RTCModule::adjust(dt))
+        if (!RTCModule::adjust(DateTime(2025, 1, 1)))
         {
             /* failed to setup rtc, power down with led blinking */
-            show_result_final_block(false);
+            show_setup_result_final_block(RESULT_FAILURE);
         }
+
+        /* do not block on timer mode */
     }
+
+    /* read time from rtc and print it */
+    Serial.println(F("Reading time from RTC"));
+    DateTime dt = RTCModule::now();
+
+    if (dt == DateTime())
+    {
+        /* failed to setup rtc, power down with led blinking */
+        show_setup_result_final_block(RESULT_FAILURE);
+    }
+
+    /* output date and time to buffer */
+    char buffer[21] = "DD-MMM-YYYY hh:mm:ss";
+    dt.toString(buffer);
+
+    Serial.print(F("RTC initialized time: "));
+    Serial.println(buffer);
+
+    /* Test DHT */
+    Serial.println(F("DHT initializing"));
+
 }
 
 void loop()
@@ -331,7 +373,7 @@ void power_all_off()
     builtin_led_off();
 }
 
-void show_result_final_block(bool success)
+void show_setup_result_final_block(bool success)
 {
     if (serial_is_enabled())
     {

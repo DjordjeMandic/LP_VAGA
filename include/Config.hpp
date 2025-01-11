@@ -7,7 +7,7 @@
 #endif
 
 #ifndef AVCC_MIN_VOLTAGE
-#define AVCC_MIN_VOLTAGE 3.4
+#define AVCC_MIN_VOLTAGE 3.45
 #endif
 
 #ifndef ADC_AVCC_SAMPLES_DEFAULT
