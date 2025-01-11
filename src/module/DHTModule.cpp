@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <DHT.h>
-#include <module/dht.hpp>
+#include <module/DHTModule.hpp>
 #include <power/DHT22PowerManager.hpp>
 #include <Config.hpp>
 

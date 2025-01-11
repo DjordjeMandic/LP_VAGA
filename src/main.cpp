@@ -6,9 +6,9 @@
 #include <power/DS3231PowerManager.hpp>
 #include <power/SIM800PowerManager.hpp>
 #include <power/DHT22PowerManager.hpp>
-#include <module/scale.hpp>
-#include <module/dht.hpp>
-#include <module/rtc.hpp>
+#include <module/ScaleModule.hpp>
+#include <module/DHTModule.hpp>
+#include <module/RTCModule.hpp>
 #include <power/ADCHelper.hpp>
 #include <Serial.hpp>
 #include <RTClib.h>

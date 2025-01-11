@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <RTClib.h>
-#include <module/rtc.hpp>
+#include <module/RTCModule.hpp>
 #include <power/DS3231PowerManager.hpp>
 #include <power/twi.hpp>
 #include <power/sleep.hpp>
