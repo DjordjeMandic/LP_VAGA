@@ -2,7 +2,7 @@
 #include <Wire.h>
 #include <RTClib.h>
 #include <module/rtc.hpp>
-#include <power/ds3231.hpp>
+#include <power/DS3231PowerManager.hpp>
 #include <power/twi.hpp>
 #include <power/sleep.hpp>
 #include <Config.hpp>

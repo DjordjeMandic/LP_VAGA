@@ -3,7 +3,7 @@
 #include <LowPower.h>
 #include <HX711.h>
 #include <power/hx711.hpp>
-#include <power/ds3231.hpp>
+#include <power/DS3231PowerManager.hpp>
 #include <power/sim800.hpp>
 #include <power/DHT22PowerManager.hpp>
 #include <module/scale.hpp>

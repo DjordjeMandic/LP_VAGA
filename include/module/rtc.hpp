@@ -2,7 +2,7 @@
 
 #include <Arduino.h>
 #include <RTClib.h>
-#include <power/ds3231.hpp>
+#include <power/DS3231PowerManager.hpp>
 
 /**
  * @brief A class to manage operations for a single DS3231 RTC module.
