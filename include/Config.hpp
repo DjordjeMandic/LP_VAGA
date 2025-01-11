@@ -2,6 +2,10 @@
 
 #include <Arduino.h>
 
+#ifndef SCALE_CALIBRATION_KNOWN_MASS_KG
+#define SCALE_CALIBRATION_KNOWN_MASS_KG 2
+#endif
+
 #ifndef ADC_AVCC_SAMPLES_DEFAULT
 #define ADC_AVCC_SAMPLES_DEFAULT 6
 #endif
