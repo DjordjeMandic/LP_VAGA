@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <power/adc.hpp>
+#include <power/ADCHelper.hpp>
 #include <power/sleep.hpp>
 
 /* Empty ADC conversion complete interrupt to clear ADC interrupt flag (ADIF) */
