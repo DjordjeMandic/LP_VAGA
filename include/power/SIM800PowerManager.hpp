@@ -6,17 +6,17 @@
 /**
  * @brief Delay time (in milliseconds) after powering on the SIM800 GSM module before it can reliably provide readings.
  */
-#define SIM800_POWER_DELAY_MS      500
+#define SIM800_POWER_DELAY_MS        500
 
 /**
  * @brief Pin state for powering off the SIM800 GSM module.
  */
-#define SIM800_POWER_PIN_STATE_OFF LOW
+#define SIM800_POWER_PIN_STATE_OFF   LOW
 
 /**
  * @brief Pin state for powering on the SIM800 GSM module.
  */
-#define SIM800_POWER_PIN_STATE_ON  HIGH
+#define SIM800_POWER_PIN_STATE_ON    HIGH
 
 /**
  * @brief Power manager for the SIM800 GSM module.
