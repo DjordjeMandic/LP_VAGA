@@ -2,7 +2,7 @@
 #include <Serial.hpp>
 #include <power/uart.hpp>
 
-bool serial_print_enabled_ = false;
+static bool serial_print_enabled_ = false;
 
 void serial_begin(unsigned long baudrate)
 {
