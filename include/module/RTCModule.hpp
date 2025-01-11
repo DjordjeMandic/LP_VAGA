@@ -15,15 +15,14 @@ class RTCModule
 {
 public:
     /**
-     * @brief Prepares the RTC module for initialization by powering it on and 
-     * starting the I2C communication.
+     * @brief Prepares the RTC module for initialization by shortly powering it off before powering it on.
      */
     static void preBeginPowerOn();
     
     /**
      * @brief Initializes the RTC module.
      * 
-     * This method powers on the RTC, starts I2C communication, and disables 
+     * This method waits for RTC to powers on, starts I2C communication, and disables 
      * unnecessary features like clock output and alarms.
      * 
      * @note This method is blocking until power-on is complete. Use `preBeginPowerOn()`

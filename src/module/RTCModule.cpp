@@ -19,10 +19,8 @@ void RTCModule::preBeginPowerOn()
     DS3231PowerManager::powerOff();
     delay(1);
 
-    /* Power on the RTC and start I2C communication */
+    /* Power on the RTC */
     DS3231PowerManager::powerOn();
-    twi_power_on();
-    Wire.begin();
 }
 
 bool RTCModule::begin()
@@ -30,6 +28,9 @@ bool RTCModule::begin()
     /* Ensure the RTC is powered on before attempting initialization */
     sleep_until(SLEEP_MODE_IDLE, DS3231PowerManager::poweredOn());
 
+    /* Start I2C communication */
+    twi_power_on();
+    Wire.begin();
     RTCModule::rtclibBeginResult_ = RTCModule::rtc_.begin();
 
     /* Disable clock output, SQW output, and alarms if initialization succeeded */

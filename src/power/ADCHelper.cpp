@@ -34,6 +34,18 @@ void ADCHelper::avccInit(const uint8_t stabilization_delay_ms)
     sleep_idle_timeout_millis(stabilization_delay_ms);
 }
 
+void ADCHelper::refBGInit(const uint8_t stabilization_delay_ms)
+{
+    ADCHelper::begin();
+
+    /* Set ADC mux to output Vbg and do one dummy sample */
+    ADCHelper::setRefBGMux();
+    ADCHelper::sample();
+
+    /* Wait for Vref to stabilize */
+    sleep_idle_timeout_millis(stabilization_delay_ms);
+}
+
 uint16_t ADCHelper::avccSample()
 {
     /* Set ADC mux and do one dummy sample */
@@ -87,4 +99,10 @@ void ADCHelper::setAvccMux()
 {
     /* AVcc as reference and Vbg as input */
     ADMUX = bit(REFS0) | bit(MUX3) | bit(MUX2) | bit(MUX1);
+}
+
+void ADCHelper::setRefBGMux()
+{
+    /* Internal bandgap as reference and gnd as input */
+    ADMUX = bit(REFS1) | bit(REFS0) | bit(MUX3) | bit(MUX2) | bit(MUX1) | bit(MUX0);
 }

@@ -34,6 +34,16 @@ public:
     static void avccInit(const uint8_t stabilization_delay_ms = ADC_AVCC_REF_STABILIZATION_DELAY_MS);
 
     /**
+     * @brief Initializes the ADC for manual Vbg measurement.
+     *        The function sets the correct ADC MUX for Vbg measurement, performs a dummy sample,
+     *        and waits for the reference to stabilize.
+     * 
+     * @param[in] stabilization_delay_ms Delay in milliseconds to allow Vref stabilization.
+     *        Defaults to @p `ADC_AVCC_REF_STABILIZATION_DELAY_MS` if not provided.
+     */
+    static void refBGInit(const uint8_t stabilization_delay_ms = ADC_AVCC_REF_STABILIZATION_DELAY_MS);
+
+    /**
      * @brief Performs a single ADC conversion with AVcc as the reference.
      *        The function sets the correct MUX for AVcc measurement, performs a dummy sample,
      *        and then returns the result of a new sample.
@@ -72,4 +82,9 @@ private:
      * @brief Sets the ADC MUX for AVcc measurement.
      */
     static void setAvccMux();
+
+    /**
+     * @brief Sets the ADC MUX for manual Vbg measurement.
+     */
+    static void setRefBGMux();
 };
