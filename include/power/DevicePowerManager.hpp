@@ -15,7 +15,7 @@
  * @tparam PowerDelayMs The delay time (in milliseconds) required after powering on the device before it can reliably operate.
  * @tparam AllowFloat A boolean indicating whether the power pin can be set to a high-impedance state (true = allowed, false = disallowed).
  */
-template <uint8_t PowerPin, uint8_t PowerPinStateOn, uint8_t PowerPinStateOff, unsigned long PowerDelayMs, bool AllowFloat = false>
+template <uint8_t PowerPin, bool PowerPinStateOn, bool PowerPinStateOff, unsigned long PowerDelayMs, bool AllowFloat = false>
 class DevicePowerManager
 {
 private:
@@ -68,9 +68,5 @@ public:
      */
     static bool poweredOn();
 };
-
-// Define the static variable for the template
-template <uint8_t PowerPin, uint8_t PowerPinStateOn, uint8_t PowerPinStateOff, unsigned long PowerDelayMs, bool AllowFloat>
-unsigned long DevicePowerManager<PowerPin, PowerPinStateOn, PowerPinStateOff, PowerDelayMs, AllowFloat>::power_on_millis_ = 0;
 
 #include <power/DevicePowerManager.tpp> // Include the template definitions
