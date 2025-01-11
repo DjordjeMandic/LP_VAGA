@@ -10,9 +10,9 @@ HX711 ScaleModule::scale_;
 
 void ScaleModule::begin()
 {
-    HX711PowerManager::power_off();
+    HX711PowerManager::powerOff();
     delay(1);
-    HX711PowerManager::power_on();
+    HX711PowerManager::powerOn();
     ScaleModule::scale_.begin(HX711_DOUT_PIN, HX711_CLK_PIN, HX711_GAIN_FACTOR);
 }
 
@@ -20,12 +20,12 @@ void ScaleModule::end()
 {
     pinMode(HX711_DOUT_PIN, INPUT);
     pinMode(HX711_CLK_PIN, INPUT);
-    HX711PowerManager::power_off();
+    HX711PowerManager::powerOff();
 }
 
 bool ScaleModule::ready()
 {
-    return HX711PowerManager::powered_on() && ScaleModule::scale_.is_ready();
+    return HX711PowerManager::poweredOn() && ScaleModule::scale_.is_ready();
 }
 
 bool ScaleModule::waitReady()
@@ -70,7 +70,7 @@ bool ScaleModule::waitReadyTimeout(const unsigned long timeout, const unsigned l
 
 bool ScaleModule::stabilize(const uint16_t stabilization_time_ms)
 {
-    if (!HX711PowerManager::powered_on())
+    if (!HX711PowerManager::poweredOn())
     {
         return false;
     }
@@ -95,7 +95,7 @@ bool ScaleModule::stabilize(const uint16_t stabilization_time_ms)
 
 long ScaleModule::read()
 {
-    if (!HX711PowerManager::powered_on())
+    if (!HX711PowerManager::poweredOn())
     {
         return 0;
     }
@@ -105,7 +105,7 @@ long ScaleModule::read()
 
 long ScaleModule::readAverage(const uint8_t times)
 {
-    if (!HX711PowerManager::powered_on())
+    if (!HX711PowerManager::poweredOn())
     {
         return 0;
     }
@@ -115,7 +115,7 @@ long ScaleModule::readAverage(const uint8_t times)
 
 double ScaleModule::getValue(const uint8_t times)
 {
-    if (!HX711PowerManager::powered_on())
+    if (!HX711PowerManager::poweredOn())
     {
         return 0.0;
     }
@@ -125,7 +125,7 @@ double ScaleModule::getValue(const uint8_t times)
 
 float ScaleModule::getUnits(const uint8_t times)
 {
-    if (!HX711PowerManager::powered_on())
+    if (!HX711PowerManager::poweredOn())
     {
         return NAN;
     }
@@ -135,7 +135,7 @@ float ScaleModule::getUnits(const uint8_t times)
 
 bool ScaleModule::tare(const uint8_t times)
 {
-    if (!HX711PowerManager::powered_on())
+    if (!HX711PowerManager::poweredOn())
     {
         return false;
     }

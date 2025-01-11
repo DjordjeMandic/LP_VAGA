@@ -1,23 +1,23 @@
 #pragma once
 
 #include <Arduino.h>
-#include <power/manager.hpp>
+#include <power/DevicePowerManager.hpp>
 
 template <uint8_t PowerPin, uint8_t PowerPinStateOn, uint8_t PowerPinStateOff, unsigned long PowerDelayMs, bool AllowFloat>
-unsigned long DevicePowerManager<PowerPin, PowerPinStateOn, PowerPinStateOff, PowerDelayMs, AllowFloat>::get_power_on_millis()
+unsigned long DevicePowerManager<PowerPin, PowerPinStateOn, PowerPinStateOff, PowerDelayMs, AllowFloat>::getPowerOnMillis()
 {
     return power_on_millis_;
 }
 
 template <uint8_t PowerPin, uint8_t PowerPinStateOn, uint8_t PowerPinStateOff, unsigned long PowerDelayMs, bool AllowFloat>
-void DevicePowerManager<PowerPin, PowerPinStateOn, PowerPinStateOff, PowerDelayMs, AllowFloat>::power_off()
+void DevicePowerManager<PowerPin, PowerPinStateOn, PowerPinStateOff, PowerDelayMs, AllowFloat>::powerOff()
 {
     pinMode(PowerPin, OUTPUT);
     digitalWrite(PowerPin, PowerPinStateOff);
 }
 
 template <uint8_t PowerPin, uint8_t PowerPinStateOn, uint8_t PowerPinStateOff, unsigned long PowerDelayMs, bool AllowFloat>
-void DevicePowerManager<PowerPin, PowerPinStateOn, PowerPinStateOff, PowerDelayMs, AllowFloat>::power_on()
+void DevicePowerManager<PowerPin, PowerPinStateOn, PowerPinStateOff, PowerDelayMs, AllowFloat>::powerOn()
 {
     if (PowerPinStateOn == HIGH)
     {
@@ -30,20 +30,20 @@ void DevicePowerManager<PowerPin, PowerPinStateOn, PowerPinStateOff, PowerDelayM
 }
 
 template <uint8_t PowerPin, uint8_t PowerPinStateOn, uint8_t PowerPinStateOff, unsigned long PowerDelayMs, bool AllowFloat>
-bool DevicePowerManager<PowerPin, PowerPinStateOn, PowerPinStateOff, PowerDelayMs, AllowFloat>::power_delay_check()
+bool DevicePowerManager<PowerPin, PowerPinStateOn, PowerPinStateOff, PowerDelayMs, AllowFloat>::powerDelayCheck()
 {
     return millis() - power_on_millis_ >= PowerDelayMs;
 }
 
 template <uint8_t PowerPin, uint8_t PowerPinStateOn, uint8_t PowerPinStateOff, unsigned long PowerDelayMs, bool AllowFloat>
-bool DevicePowerManager<PowerPin, PowerPinStateOn, PowerPinStateOff, PowerDelayMs, AllowFloat>::powered_on()
+bool DevicePowerManager<PowerPin, PowerPinStateOn, PowerPinStateOff, PowerDelayMs, AllowFloat>::poweredOn()
 {
-    return (digitalRead(PowerPin) == PowerPinStateOn) && power_delay_check();
+    return (digitalRead(PowerPin) == PowerPinStateOn) && powerDelayCheck();
 }
 
-// Only provide the power_float() function if AllowFloat is true
+// Only provide the powerFloat() function if AllowFloat is true
 template <uint8_t PowerPin, uint8_t PowerPinStateOn, uint8_t PowerPinStateOff, unsigned long PowerDelayMs, bool AllowFloat>
-void DevicePowerManager<PowerPin, PowerPinStateOn, PowerPinStateOff, PowerDelayMs, AllowFloat>::power_float()
+void DevicePowerManager<PowerPin, PowerPinStateOn, PowerPinStateOff, PowerDelayMs, AllowFloat>::powerFloat()
 {
     static_assert(AllowFloat, "Floating is not allowed for this device.");
     pinMode(PowerPin, INPUT);

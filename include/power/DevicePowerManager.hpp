@@ -27,12 +27,12 @@ public:
      * 
      * @return The value of `millis()` when the device was powered on.
      */
-    static unsigned long get_power_on_millis();
+    static unsigned long getPowerOnMillis();
 
     /**
      * @brief Power off the device by setting the power pin to its OFF state.
      */
-    static void power_off();
+    static void powerOff();
 
     /**
      * @brief Set the device power pin to a floating (high-impedance) state.
@@ -40,14 +40,14 @@ public:
      * If floating is disabled (`AllowFloat = false`), this function will not be available
      * and attempting to call it will result in a compile-time error.
      */
-    static void power_float();
+    static void powerFloat();
 
     /**
      * @brief Power on the device by setting the power pin to its ON state.
      * 
      * The time of power-on is recorded using `millis()`.
      */
-    static void power_on();
+    static void powerOn();
 
     /**
      * @brief Check if the required delay time after powering on the device has elapsed.
@@ -55,7 +55,7 @@ public:
      * @return `true` if the delay (defined by `PowerDelayMs`) has elapsed since 
      * the device was powered on, otherwise `false`.
      */
-    static bool power_delay_check();
+    static bool powerDelayCheck();
 
     /**
      * @brief Check if the device is powered on and ready for use.
@@ -66,11 +66,11 @@ public:
      * 
      * @return `true` if the device is powered on and ready, otherwise `false`.
      */
-    static bool powered_on();
+    static bool poweredOn();
 };
 
 // Define the static variable for the template
 template <uint8_t PowerPin, uint8_t PowerPinStateOn, uint8_t PowerPinStateOff, unsigned long PowerDelayMs, bool AllowFloat>
 unsigned long DevicePowerManager<PowerPin, PowerPinStateOn, PowerPinStateOff, PowerDelayMs, AllowFloat>::power_on_millis_ = 0;
 
-#include <power/manager.tpp> // Include the template definitions
+#include <power/DevicePowerManager.tpp> // Include the template definitions

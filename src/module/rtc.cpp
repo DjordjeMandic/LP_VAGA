@@ -16,11 +16,11 @@ bool RTCModule::rtclibBeginResult_ = false;
 void RTCModule::preBeginPowerOn()
 {
     /* Power off the RTC to reset it */
-    DS3231PowerManager::power_off();
+    DS3231PowerManager::powerOff();
     delay(1);
 
     /* Power on the RTC and start I2C communication */
-    DS3231PowerManager::power_on();
+    DS3231PowerManager::powerOn();
     twi_power_on();
     Wire.begin();
 }
@@ -28,7 +28,7 @@ void RTCModule::preBeginPowerOn()
 bool RTCModule::begin()
 {
     /* Ensure the RTC is powered on before attempting initialization */
-    sleep_until(SLEEP_MODE_IDLE, DS3231PowerManager::powered_on());
+    sleep_until(SLEEP_MODE_IDLE, DS3231PowerManager::poweredOn());
 
     RTCModule::rtclibBeginResult_ = RTCModule::rtc_.begin();
 
@@ -49,7 +49,7 @@ bool RTCModule::begin()
 bool RTCModule::ready()
 {
     /* Check if the RTC is powered on and initialized */
-    return DS3231PowerManager::powered_on() && RTCModule::rtclibBeginResult_;
+    return DS3231PowerManager::poweredOn() && RTCModule::rtclibBeginResult_;
 }
 
 void RTCModule::end()
@@ -57,7 +57,7 @@ void RTCModule::end()
     /* Stop I2C communication and power off the RTC */
     Wire.end();
     twi_power_off();
-    DS3231PowerManager::power_off();
+    DS3231PowerManager::powerOff();
 }
 
 bool RTCModule::lostPower()

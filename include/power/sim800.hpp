@@ -1,6 +1,6 @@
 #pragma once
 
-#include <power/manager.hpp>
+#include <power/DevicePowerManager.hpp>
 #include <Config.hpp>
 
 /**

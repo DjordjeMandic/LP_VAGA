@@ -73,7 +73,7 @@ public:
     /**
      * @brief Helper function to check if the sensor is powered on.
      * 
-     * This method checks the power state of the sensor using the power manager.
+     * This method checks the power state of the sensor using the power DevicePowerManager
      * 
      * @return `true` if the sensor is powered on, otherwise `false`.
      */
