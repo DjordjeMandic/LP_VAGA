@@ -48,9 +48,9 @@ do {                                    \
  * Since Timer0 remains active, functions like `millis()` and `delay()` continue working normally,
  * allowing the sleep duration to be tracked using `millis()`.
  * 
- * @param sleep_time_ms The duration to sleep, in milliseconds.
+ * @param[in] sleep_time_ms The duration to sleep, in milliseconds.
  */
-void sleep_idle_timeout_millis(unsigned long sleep_time_ms);
+void sleep_idle_timeout_millis(const unsigned long sleep_time_ms);
 
 /**
  * @brief Sleep for 80ms in power-down mode with ADC off and BOD on.

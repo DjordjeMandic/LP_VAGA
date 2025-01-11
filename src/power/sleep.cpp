@@ -5,7 +5,7 @@
 #include <power/sleep.hpp>
 #include <serial.hpp>
 
-void sleep_idle_timeout_millis(unsigned long sleep_time_ms)
+void sleep_idle_timeout_millis(const unsigned long sleep_time_ms)
 {
     unsigned long start = millis();
 
