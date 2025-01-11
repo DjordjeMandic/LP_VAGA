@@ -26,6 +26,10 @@ public:
      * This method powers on the RTC, starts I2C communication, and disables 
      * unnecessary features like clock output and alarms.
      * 
+     * @note This method is blocking until power-on is complete. Use `preBeginPowerOn()`
+     *       to prepare the RTC for initialization. To prevent blocking, before calling this method,
+     *       ensure the RTC is powered on by calling `DS3231PowerManager::powered_on()`.
+     * 
      * @return `true` if initialization was successful, otherwise `false`.
      */
     static bool begin();

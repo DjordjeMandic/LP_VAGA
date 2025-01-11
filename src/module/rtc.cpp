@@ -4,6 +4,7 @@
 #include <module/rtc.hpp>
 #include <power/ds3231.hpp>
 #include <power/twi.hpp>
+#include <power/sleep.hpp>
 #include <config.hpp>
 
 /* Static instance of the RTC_DS3231 */
@@ -27,10 +28,7 @@ void RTCModule::preBeginPowerOn()
 bool RTCModule::begin()
 {
     /* Ensure the RTC is powered on before attempting initialization */
-    if (!DS3231PowerManager::powered_on())
-    {
-        return false;
-    }
+    sleep_until(SLEEP_MODE_IDLE, DS3231PowerManager::powered_on());
 
     RTCModule::rtclibBeginResult_ = RTCModule::rtc_.begin();
 
