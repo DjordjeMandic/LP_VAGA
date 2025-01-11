@@ -64,24 +64,25 @@ void setup()
         serial_println(F("HX711 initializing"));
         
         /* power on scale and init library */
-        scale_begin();
+        ScaleModule::begin();
         bool scale_status = true;
 
-        /* wait for scale to be ready, power on delay + 1000ms for first sample */
-        scale_status &= scale_wait_ready_timeout(HX711_POWER_DELAY_MS + 1000);
+        /* wait for scale to be ready */
+        scale_status &= ScaleModule::waitReadyTimeout();
         
         /* perform scale stabilization only if scale is ready */
         if (scale_status)
         {
             serial_println(F("HX711 stabilizing"));
-            /* stabilize scale using dummy readings for 3 seconds */
-            scale_status &= scale_stabilize(SCALE_STABILIZATION_TIME_MS);
+
+            /* stabilize scale using dummy readings */
+            scale_status &= ScaleModule::stabilize();
         }
 
         if (!scale_status)
         {
             /* failed to setup scale, block */
-            while (1);
+            show_result_final_block(false);
         }
 
         if (BUTTON_PRESSED(BUTTON_TARE_PIN, BUTTON_TARE_PIN_ACTIVE_STATE))
@@ -178,7 +179,7 @@ bool user_scale_calibration()
 
 void show_result_final_block(bool success)
 {
-    serial_print(F("Result: "));
+    serial_print(F("Operation result: "));
     serial_print(success ? F("ok") : F("fail"));
     serial_println(F(" | Press reset to reboot"));
 
