@@ -2,7 +2,7 @@
 #include <DHT.h>
 #include <module/dht.hpp>
 #include <power/dht22.hpp>
-#include <config.hpp>
+#include <Config.hpp>
 
 /* Static instance of the DHT sensor */
 DHT DHTModule::dht_(DHT22_DATA_PIN, DHT_TYPE);

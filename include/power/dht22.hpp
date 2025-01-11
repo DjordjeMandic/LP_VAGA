@@ -2,7 +2,7 @@
 
 #include <Arduino.h>
 #include <power/manager.hpp>
-#include <config.hpp>
+#include <Config.hpp>
 
 /**
  * @brief Delay time (in milliseconds) after powering on the DHT22 sensor before it can reliably provide readings.

@@ -5,7 +5,7 @@
 #include <power/ds3231.hpp>
 #include <power/twi.hpp>
 #include <power/sleep.hpp>
-#include <config.hpp>
+#include <Config.hpp>
 
 /* Static instance of the RTC_DS3231 */
 RTC_DS3231 RTCModule::rtc_;

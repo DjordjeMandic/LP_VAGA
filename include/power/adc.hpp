@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
-#include <config.hpp>
+#include <Config.hpp>
 
 /**
  * @brief A class to manage operations for the ADC module.

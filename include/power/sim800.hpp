@@ -1,7 +1,7 @@
 #pragma once
 
 #include <power/manager.hpp>
-#include <config.hpp>
+#include <Config.hpp>
 
 /**
  * @brief Delay time (in milliseconds) after powering on the SIM800 GSM module before it can reliably provide readings.

@@ -3,7 +3,7 @@
 #include <module/scale.hpp>
 #include <power/hx711.hpp>
 #include <power/sleep.hpp>
-#include <config.hpp>
+#include <Config.hpp>
 
 /* Static instance of the HX711 */
 HX711 ScaleModule::scale_;

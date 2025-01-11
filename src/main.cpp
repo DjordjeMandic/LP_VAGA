@@ -49,7 +49,7 @@ void setup()
 
     uint8_t button_pressed_count = calibrate_button_pressed + tare_button_pressed;
 
-    /* set baud rate in config.hpp */
+    /* set baud rate in Config.hpp */
     serial_begin();
 
     if (button_pressed_count > 1)
