@@ -34,7 +34,7 @@ bool DHTModule::ready()
 bool DHTModule::read(bool force)
 {
     /* Ensure the sensor is powered on before reading data */
-    if (!DHTModule::ensurePoweredOn())
+    if (!DHT22PowerManager::poweredOn())
     {
         return false;
     }
@@ -44,7 +44,7 @@ bool DHTModule::read(bool force)
 float DHTModule::readTemperature()
 {
     /* Ensure the sensor is powered on before reading temperature */
-    if (!DHTModule::ensurePoweredOn())
+    if (!DHT22PowerManager::poweredOn())
     {
         return NAN;
     }
@@ -54,15 +54,9 @@ float DHTModule::readTemperature()
 float DHTModule::readHumidity()
 {
     /* Ensure the sensor is powered on before reading humidity */
-    if (!DHTModule::ensurePoweredOn())
+    if (!DHT22PowerManager::poweredOn())
     {
         return NAN;
     }
     return DHTModule::dht_.readHumidity();
-}
-
-bool DHTModule::ensurePoweredOn()
-{
-    /* Check if the sensor is currently powered on */
-    return DHT22PowerManager::poweredOn();
 }

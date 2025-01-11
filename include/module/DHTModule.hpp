@@ -70,15 +70,6 @@ public:
      */
     static float readHumidity();
     
-    /**
-     * @brief Helper function to check if the sensor is powered on.
-     * 
-     * This method checks the power state of the sensor using the power DevicePowerManager
-     * 
-     * @return `true` if the sensor is powered on, otherwise `false`.
-     */
-    static bool ensurePoweredOn();
-
 private:
     static DHT dht_; /**< Static instance of the DHT sensor class for managing sensor operations. */
 };
