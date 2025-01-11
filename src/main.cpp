@@ -42,6 +42,7 @@ void setup()
 
     pinMode(BUTTON_CALIBRATE_PIN, BUTTON_PIN_MODE(BUTTON_CALIBRATE_PIN_ACTIVE_STATE));
     pinMode(BUTTON_TARE_PIN, BUTTON_PIN_MODE(BUTTON_TARE_PIN_ACTIVE_STATE));
+    pinMode(BUTTON_INTERNAL_REFERENCE_SET_PIN, BUTTON_PIN_MODE(BUTTON_INTERNAL_REFERENCE_SET_PIN_ACTIVE_STATE));
 
     /* set baud rate in Config.hpp */
     serial_begin();
@@ -51,8 +52,9 @@ void setup()
 
     bool calibrate_button_pressed = BUTTON_PRESSED(BUTTON_CALIBRATE_PIN, BUTTON_CALIBRATE_PIN_ACTIVE_STATE);
     bool tare_button_pressed      = BUTTON_PRESSED(BUTTON_TARE_PIN, BUTTON_TARE_PIN_ACTIVE_STATE);
+    bool internal_reference_set_button_pressed = BUTTON_PRESSED(BUTTON_INTERNAL_REFERENCE_SET_PIN, BUTTON_INTERNAL_REFERENCE_SET_PIN_ACTIVE_STATE);
 
-    uint8_t button_pressed_count = calibrate_button_pressed + tare_button_pressed;
+    uint8_t button_pressed_count = calibrate_button_pressed + tare_button_pressed + internal_reference_set_button_pressed;
 
     if (button_pressed_count > 1)
     {
@@ -62,6 +64,11 @@ void setup()
     }
 
     /* calibrate internal adc reference */
+
+    if (internal_reference_set_button_pressed)
+    {
+        
+    }
 
     //todo
 
