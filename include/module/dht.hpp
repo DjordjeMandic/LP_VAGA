@@ -2,7 +2,7 @@
 
 #include <Arduino.h>
 #include <DHT.h>
-#include <power/dht22.hpp>
+#include <power/DHT22PowerManager.hpp>
 
 /**
  * @brief A class to manage operations for a single DHT sensor module.

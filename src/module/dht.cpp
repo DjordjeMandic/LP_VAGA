@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <DHT.h>
 #include <module/dht.hpp>
-#include <power/dht22.hpp>
+#include <power/DHT22PowerManager.hpp>
 #include <Config.hpp>
 
 /* Static instance of the DHT sensor */

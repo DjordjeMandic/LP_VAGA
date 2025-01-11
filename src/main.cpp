@@ -5,11 +5,11 @@
 #include <power/hx711.hpp>
 #include <power/ds3231.hpp>
 #include <power/sim800.hpp>
-#include <power/dht22.hpp>
+#include <power/DHT22PowerManager.hpp>
 #include <module/scale.hpp>
 #include <module/dht.hpp>
 #include <module/rtc.hpp>
-#include <power/adc.hpp>
+#include <power/ADCHelper.hpp>
 #include <Serial.hpp>
 #include <RTClib.h>
 #include <DHT.h>
