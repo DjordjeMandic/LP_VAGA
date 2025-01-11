@@ -3,43 +3,44 @@
 #include <module/scale.hpp>
 #include <power/hx711.hpp>
 #include <power/sleep.hpp>
-#include <Config.hpp>
+#include <config.hpp>
 
-static HX711 scale_;
+/* Static instance of the HX711 */
+HX711 ScaleModule::scale_;
 
-void scale_begin()
+void ScaleModule::begin()
 {
     HX711PowerManager::power_off();
     delay(1);
     HX711PowerManager::power_on();
-    scale_.begin(HX711_DOUT_PIN, HX711_CLK_PIN, HX711_GAIN_FACTOR);
+    ScaleModule::scale_.begin(HX711_DOUT_PIN, HX711_CLK_PIN, HX711_GAIN_FACTOR);
 }
 
-void scale_end()
+void ScaleModule::end()
 {
     pinMode(HX711_DOUT_PIN, INPUT);
     pinMode(HX711_CLK_PIN, INPUT);
     HX711PowerManager::power_off();
 }
 
-bool scale_ready()
+bool ScaleModule::ready()
 {
-    return HX711PowerManager::powered_on() && scale_.is_ready();
+    return HX711PowerManager::powered_on() && ScaleModule::scale_.is_ready();
 }
 
-bool scale_wait_ready()
+bool ScaleModule::waitReady()
 {
     /* Timer0 ISR runs every 1024us */
-    sleep_until(SLEEP_MODE_IDLE, scale_ready());
+    sleep_until(SLEEP_MODE_IDLE, ScaleModule::ready());
 }
 
-bool scale_wait_ready_retry(int retries, unsigned long delay_ms)
+bool ScaleModule::waitReadyRetry(const int retries, const unsigned long delay_ms)
 {
     int count = 0;
 
     while (count < retries)
     {
-        if (scale_ready())
+        if (ScaleModule::ready())
         {
             return true;
         }
@@ -51,26 +52,28 @@ bool scale_wait_ready_retry(int retries, unsigned long delay_ms)
     return false; // Retries exhausted
 }
 
-
-bool scale_wait_ready_timeout(unsigned long timeout, unsigned long delay_ms)
+bool ScaleModule::waitReadyTimeout(const unsigned long timeout, const unsigned long delay_ms)
 {
-	unsigned long millisStarted = millis();
-	while (millis() - millisStarted < timeout)
+    unsigned long millisStarted = millis();
+    while (millis() - millisStarted < timeout)
     {
-		if (scale_ready())
+        if (ScaleModule::ready())
         {
-			return true;
-		}
+            return true;
+        }
 
         /* Timer0 ISR runs every 1024us */
-		sleep_while(SLEEP_MODE_IDLE, false);
-	}
-	return false;
+        sleep_while(SLEEP_MODE_IDLE, false);
+    }
+    return false;
 }
 
-bool scale_stabilize(uint16_t stabilization_time_ms)
+bool ScaleModule::stabilize(const uint16_t stabilization_time_ms)
 {
-    scale_return_if_not_powered_on(false);
+    if (!HX711PowerManager::powered_on())
+    {
+        return false;
+    }
 
     if (stabilization_time_ms > 0)
     {
@@ -79,7 +82,7 @@ bool scale_stabilize(uint16_t stabilization_time_ms)
         while (elapsedTime < stabilization_time_ms)
         {
             /* If sample is not ready, scale will wait for it in blocking active loop */
-            scale_read(); // Perform the scale reading
+            ScaleModule::scale_.read(); // Perform the scale reading
 
             /* Sample rate is 10Hz (100ms) */
             sleep_power_down_95ms_adc_off_bod_on();
@@ -90,59 +93,74 @@ bool scale_stabilize(uint16_t stabilization_time_ms)
     return true;
 }
 
-long scale_read()
+long ScaleModule::read()
 {
-    scale_return_if_not_powered_on(0);
-    
-    return scale_.read();
+    if (!HX711PowerManager::powered_on())
+    {
+        return 0;
+    }
+
+    return ScaleModule::scale_.read();
 }
 
-long scale_read_average(uint8_t times)
+long ScaleModule::readAverage(const uint8_t times)
 {
-    scale_return_if_not_powered_on(0);
-    
-    return scale_.read_average(times);
+    if (!HX711PowerManager::powered_on())
+    {
+        return 0;
+    }
+
+    return ScaleModule::scale_.read_average(times);
 }
 
-double scale_get_value(uint8_t times)
+double ScaleModule::getValue(const uint8_t times)
 {
-    scale_return_if_not_powered_on(0.0);
-    
-    return scale_.get_value(times);
+    if (!HX711PowerManager::powered_on())
+    {
+        return 0.0;
+    }
+
+    return ScaleModule::scale_.get_value(times);
 }
 
-float scale_get_units(uint8_t times)
+float ScaleModule::getUnits(const uint8_t times)
 {
-    scale_return_if_not_powered_on(NAN);
+    if (!HX711PowerManager::powered_on())
+    {
+        return NAN;
+    }
 
-    return scale_.get_units(times);
+    return ScaleModule::scale_.get_units(times);
 }
 
-bool scale_tare(uint8_t times)
+bool ScaleModule::tare(const uint8_t times)
 {
-    scale_return_if_not_powered_on(false);
+    if (!HX711PowerManager::powered_on())
+    {
+        return false;
+    }
 
-    scale_.tare(times);
+    ScaleModule::scale_.tare(times);
 
     return true;
 }
 
-void scale_set_scale(float scale)
+void ScaleModule::setScale(const float scale)
 {
-    scale_.set_scale(scale);
+    ScaleModule::scale_.set_scale(scale);
 }
 
-float scale_get_scale()
+float ScaleModule::getScale()
 {
-    return scale_.get_scale();
+    return ScaleModule::scale_.get_scale();
 }
 
-void scale_set_offset(long offset)
+void ScaleModule::setOffset(const long offset)
 {
-    scale_.set_offset(offset);
+    ScaleModule::scale_.set_offset(offset);
 }
 
-long scale_get_offset()
+long ScaleModule::getOffset()
 {
-    return scale_.get_offset();
+    return ScaleModule::scale_.get_offset();
 }
