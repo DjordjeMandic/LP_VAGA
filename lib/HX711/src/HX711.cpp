@@ -9,6 +9,7 @@
 **/
 #include <Arduino.h>
 #include "HX711.h"
+#include <power/sleep.hpp>
 
 // TEENSYDUINO has a port of Dean Camera's ATOMIC_BLOCK macros for AVR to ARM Cortex M3.
 #define HAS_ATOMIC_BLOCK (defined(ARDUINO_ARCH_AVR) || defined(TEENSYDUINO))
@@ -194,9 +195,13 @@ void HX711::wait_ready(unsigned long delay_ms) {
 	// This is a blocking implementation and will
 	// halt the sketch until a load cell is connected.
 	while (!is_ready()) {
-		// Probably will do no harm on AVR but will feed the Watchdog Timer (WDT) on ESP.
-		// https://github.com/bogde/HX711/issues/73
-		delay(delay_ms);
+		// // Probably will do no harm on AVR but will feed the Watchdog Timer (WDT) on ESP.
+		// // https://github.com/bogde/HX711/issues/73
+		// delay(delay_ms);
+
+		/* sample rate is 10Hz, so sleep for 95ms then sleep in idle until ready */
+		sleep_power_down_95ms_adc_off_bod_on();
+		sleep_while(SLEEP_MODE_IDLE, !is_ready());
 	}
 }
 
@@ -209,7 +214,8 @@ bool HX711::wait_ready_retry(int retries, unsigned long delay_ms) {
 		if (is_ready()) {
 			return true;
 		}
-		delay(delay_ms);
+		// delay(delay_ms);
+		sleep_idle_timeout_millis(delay_ms);
 		count++;
 	}
 	return false;
@@ -223,7 +229,8 @@ bool HX711::wait_ready_timeout(unsigned long timeout, unsigned long delay_ms) {
 		if (is_ready()) {
 			return true;
 		}
-		delay(delay_ms);
+		// delay(delay_ms);
+		sleep_idle_timeout_millis(delay_ms);
 	}
 	return false;
 }
@@ -232,9 +239,9 @@ long HX711::read_average(byte times) {
 	long sum = 0;
 	for (byte i = 0; i < times; i++) {
 		sum += read();
-		// Probably will do no harm on AVR but will feed the Watchdog Timer (WDT) on ESP.
-		// https://github.com/bogde/HX711/issues/73
-		delay(0);
+		// // Probably will do no harm on AVR but will feed the Watchdog Timer (WDT) on ESP.
+		// // https://github.com/bogde/HX711/issues/73
+		// delay(0);
 	}
 	return sum / times;
 }
