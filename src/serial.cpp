@@ -13,6 +13,11 @@ void serial_begin(unsigned long baudrate)
 
 void serial_end()
 {
+    if (serial_print_enabled_)
+    {
+        Serial.flush();
+    }
+
     serial_print_enabled_ = false;
     Serial.end();
     uart_power_off();
