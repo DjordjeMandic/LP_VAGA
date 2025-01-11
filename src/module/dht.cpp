@@ -4,41 +4,65 @@
 #include <power/dht22.hpp>
 #include <config.hpp>
 
-static DHT dht(DHT22_DATA_PIN, DHT_TYPE);
+/* Static instance of the DHT sensor */
+DHT DHTModule::dht_(DHT22_DATA_PIN, DHT_TYPE);
 
-void dht_begin(uint8_t pullup_time_us)
+void DHTModule::begin(uint8_t pullup_time_us)
 {
+    /* Power off the sensor to reset it */
     DHT22PowerManager::power_off();
     delay(1);
+
+    /* Power on the sensor and initialize it with the specified pull-up time */
     DHT22PowerManager::power_on();
-    dht.begin(pullup_time_us);
+    DHTModule::dht_.begin(pullup_time_us);
 }
 
-void dht_end()
+void DHTModule::end()
 {
+    /* Set the data pin to input mode and power off the sensor */
     pinMode(DHT22_DATA_PIN, INPUT);
     DHT22PowerManager::power_off();
 }
 
-bool dht_ready()
+bool DHTModule::ready()
 {
-    return DHT22PowerManager::powered_on() && dht.read();
+    /* Check if the sensor is powered on and ready */
+    return DHT22PowerManager::powered_on() && DHTModule::dht_.read();
 }
 
-bool dht_read(bool force)
+bool DHTModule::read(bool force)
 {
-    dht_return_if_not_powered_on(false);
-    return dht.read(force);
+    /* Ensure the sensor is powered on before reading data */
+    if (!DHTModule::ensurePoweredOn())
+    {
+        return false;
+    }
+    return DHTModule::dht_.read(force);
 }
 
-float dht_read_temperature()
+float DHTModule::readTemperature()
 {
-    dht_return_if_not_powered_on(NAN);
-    return dht.readTemperature();
+    /* Ensure the sensor is powered on before reading temperature */
+    if (!DHTModule::ensurePoweredOn())
+    {
+        return NAN;
+    }
+    return DHTModule::dht_.readTemperature();
 }
 
-float dht_read_humidity()
+float DHTModule::readHumidity()
 {
-    dht_return_if_not_powered_on(NAN);
-    return dht.readHumidity();
+    /* Ensure the sensor is powered on before reading humidity */
+    if (!DHTModule::ensurePoweredOn())
+    {
+        return NAN;
+    }
+    return DHTModule::dht_.readHumidity();
+}
+
+bool DHTModule::ensurePoweredOn()
+{
+    /* Check if the sensor is currently powered on */
+    return DHT22PowerManager::powered_on();
 }
