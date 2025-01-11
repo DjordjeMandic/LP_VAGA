@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <HX711.h>
 #include <module/scale.hpp>
-#include <power/hx711.hpp>
+#include <power/HX711PowerManager.hpp>
 #include <power/sleep.hpp>
 #include <Config.hpp>
 

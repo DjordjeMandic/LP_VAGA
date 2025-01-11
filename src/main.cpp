@@ -2,7 +2,7 @@
 #include <SPI.h>
 #include <LowPower.h>
 #include <HX711.h>
-#include <power/hx711.hpp>
+#include <power/HX711PowerManager.hpp>
 #include <power/DS3231PowerManager.hpp>
 #include <power/sim800.hpp>
 #include <power/DHT22PowerManager.hpp>
