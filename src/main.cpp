@@ -98,15 +98,13 @@ void setup()
 
     /* check avcc voltage, power down if too low for modules to work */
     float supply_voltage = get_supply_voltage();
-
+    Serial.print(F("AVCC voltage: "));
+    Serial.print(supply_voltage, 3);
+    Serial.print(F(" V, Minimum required: "));
+    Serial.print(AVCC_MIN_VOLTAGE, 3);
+    Serial.println(F(" V"));
     if (supply_voltage < AVCC_MIN_VOLTAGE)
     {
-        Serial.print(F("AVCC voltage too low: "));
-        Serial.print(supply_voltage, 3);
-        Serial.print(F(" V, Minimum required: "));
-        Serial.print(AVCC_MIN_VOLTAGE, 3);
-        Serial.println(F(" V"));
-
         /* power down with led blinking */
         show_setup_result_final_block(RESULT_FAILURE);
     }
