@@ -485,7 +485,7 @@ bool setup_calibrate_internal_reference()
     Serial.println(F(" mV"));
 
     /* set internal reference if within range */
-    if ((inputLong < 900 || inputLong > 1300))
+    if ((inputLong > 900 || inputLong < 1300))
     {
         /* save to EEPROM */
         DataEEPROM::setInternalAdcReference(static_cast<uint16_t>(inputLong));
