@@ -97,12 +97,12 @@ uint16_t ADCHelper::sample()
 
 void ADCHelper::setAvccMux()
 {
-    /* AVcc as reference and Vbg as input */
+    /* AVcc as reference and Vbg as input, used to measure AVcc with known Vbg voltage */
     ADMUX = bit(REFS0) | bit(MUX3) | bit(MUX2) | bit(MUX1);
 }
 
 void ADCHelper::setRefBGMux()
 {
-    /* Internal bandgap as reference and gnd as input */
+    /* Internal bandgap as reference and gnd as input, used to measure Vbg on AREF pin */
     ADMUX = bit(REFS1) | bit(REFS0) | bit(MUX3) | bit(MUX2) | bit(MUX1) | bit(MUX0);
 }

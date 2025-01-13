@@ -45,9 +45,14 @@ float get_supply_voltage(uint8_t samples = ADC_AVCC_SAMPLES_DEFAULT);
 
 bool timer_mode_button_pressed_on_boot = false;
 
+const DateTime timer_mode_datetime = DateTime(2025, 1, 1, 0, 0, 0);
+
 void setup()
 {
     power_all_off();
+
+    /* alive signal */
+    builtin_led_on();
 
     /* configure buttons */
     pinMode(BUTTON_CALIBRATE_PIN, BUTTON_PIN_MODE(BUTTON_CALIBRATE_PIN_ACTIVE_STATE));
@@ -59,8 +64,6 @@ void setup()
     serial_begin();
     Serial.println(F("Starting"));
 
-    /* alive signal */
-    builtin_led_on();
 
     /* read buttons */
     bool calibrate_button_pressed = BUTTON_PRESSED(BUTTON_CALIBRATE_PIN, BUTTON_CALIBRATE_PIN_ACTIVE_STATE);
@@ -159,7 +162,7 @@ void setup()
     /* check avcc voltage, power down if too low for modules to work */
     float supply_voltage = get_supply_voltage();
 
-    if (supply_voltage <= AVCC_MIN_VOLTAGE)
+    if (supply_voltage < AVCC_MIN_VOLTAGE)
     {
         Serial.print(F("AVCC voltage too low: "));
         Serial.print(supply_voltage, 3);
@@ -178,6 +181,9 @@ void setup()
     ScaleModule::begin();
     bool scale_status = true;
 
+    /* indicate start of procedure */
+    builtin_led_off();
+
     /* wait for scale to be ready */
     scale_status &= ScaleModule::waitReadyTimeout();
     
@@ -190,32 +196,27 @@ void setup()
         scale_status &= ScaleModule::stabilize();
     }
 
+    /* if failed to stabilize scale, block */
     if (!scale_status)
     {
-        /* failed to stabilize scale, block */
         show_setup_result_final_block(RESULT_FAILURE);
     }
 
     /* calibrate or tare scale if requested */
     if (calibrate_button_pressed || tare_button_pressed)
     {
-        Serial.println(F("Calibrate or tare operation requested"));
-
-        /* indicate start of procedure */
-        builtin_led_off();
-
-        Serial.println(F("HX711 taring"));
+        Serial.println(F("Calibrate or tare operation requested, HX711 taring"));
 
         /* tare operation is required anyways for calibration */
         scale_status &= ScaleModule::tare();
 
+        /* if failed to tare scale, block */
         if (!scale_status)
         {
-            /* failed to setup scale, block */
             show_setup_result_final_block(RESULT_FAILURE);
         }
 
-        /* save new tare offset */
+        /* get new tare offset */
         long new_tare_offset = ScaleModule::getOffset();
 
         /* store to EEPROM */
@@ -224,6 +225,7 @@ void setup()
         Serial.print(F("Saved new tare offset: "));
         Serial.println(new_tare_offset);
 
+        /* tare only operation requested */
         if (tare_button_pressed)
         {
             Serial.println(F("Only tare operation requested"));
@@ -232,9 +234,9 @@ void setup()
             show_setup_result_final_block(RESULT_SUCCESS);
         }
 
+        /* calibrate scale */
         if (calibrate_button_pressed)
         {
-            /* calibrate scale */
             Serial.println(F("Calibrating scale"));
 
             float known_mass_kg = SCALE_CALIBRATION_KNOWN_MASS_KG;
@@ -242,7 +244,6 @@ void setup()
             /* wait for user to place known weight and press calibrate button */
             do
             {
-
                 Serial.print(F("Press tare button after "));
                 Serial.print(known_mass_kg, 0);
                 Serial.println(F(" kg weight is placed"));
@@ -253,10 +254,10 @@ void setup()
                 sleep_power_down_1065ms_adc_off_bod_on();
             } while (!BUTTON_PRESSED(BUTTON_TARE_PIN, BUTTON_TARE_PIN_ACTIVE_STATE));
 
-            /* set scale factor to 1 */
+            /* set scale factor to 1 (default) */
             ScaleModule::setScale(1.0f);
 
-            /* measure and calculate new scale factor */
+            /* measure average 10x and calculate new scale factor */
             float new_scale_factor = ScaleModule::getUnits(10) / known_mass_kg;
 
             /* save new scale factor to EEPROM */
@@ -296,6 +297,7 @@ void setup()
         show_setup_result_final_block(RESULT_FAILURE);
     }
 
+    /* check for power loss */
     if (RTCModule::lostPower())
     {
         /* if timer mode button is not pressed on boot */
@@ -308,25 +310,24 @@ void setup()
         }
 
         /* timer mode button is pressed on boot */
-
         Serial.println(F("Timer mode enabled. Set time to 01-Jan-2025 00:00:00"));
 
-        if (!RTCModule::adjust(DateTime(2025, 1, 1)))
+        if (!RTCModule::adjust(timer_mode_datetime))
         {
             /* failed to setup rtc, power down with led blinking */
             show_setup_result_final_block(RESULT_FAILURE);
         }
 
-        /* do not block on timer mode */
+        /* time for timer mode has been set, continue */
     }
 
     /* read time from rtc and print it */
     Serial.println(F("Reading time from RTC"));
     DateTime dt = RTCModule::now();
 
-    if (dt == DateTime())
+    /* check if rtc time is valid */
+    if (dt < timer_mode_datetime)
     {
-        /* failed to setup rtc, power down with led blinking */
         show_setup_result_final_block(RESULT_FAILURE);
     }
 
@@ -334,12 +335,13 @@ void setup()
     char buffer[21] = "DD-MMM-YYYY hh:mm:ss";
     dt.toString(buffer);
 
-    Serial.print(F("RTC initialized time: "));
+    Serial.print(F("RTC time: "));
     Serial.println(buffer);
 
     /* Test DHT */
     Serial.println(F("DHT initializing"));
 
+    
 }
 
 void loop()
