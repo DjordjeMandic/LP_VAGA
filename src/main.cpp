@@ -63,6 +63,7 @@ void setup()
     /* alive signal */
     builtin_led_on();
     //snprintf_P
+    // use printf from print
     /* configure buttons */
     pinMode(BUTTON_CALIBRATE_PIN, BUTTON_PIN_MODE(BUTTON_CALIBRATE_PIN_ACTIVE_STATE));
     pinMode(BUTTON_TARE_PIN, BUTTON_PIN_MODE(BUTTON_TARE_PIN_ACTIVE_STATE));
