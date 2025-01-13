@@ -436,11 +436,10 @@ float calculate_supply_voltage(uint16_t adc_value, uint16_t bandgap_voltage_mV)
     Serial.println(bandgap_voltage_mV);
 
     /* Calculate supply voltage, supply voltage is used as reference while sampling 1.1v bandgap */
-    uint32_t supply_voltage_milivolts = (1024 * bandgap_voltage_mV);
+    uint32_t supply_voltage_milivolts = (1023 * bandgap_voltage_mV);
     supply_voltage_milivolts += (adc_value / 2U);
     supply_voltage_milivolts /= adc_value;
-    Serial.println(supply_voltage_milivolts, 3);
-    return static_cast<float>(supply_voltage_milivolts) / 1000.0f;
+    return (supply_voltage_milivolts * 1.0F) / 1000.0f;
 }
 
 bool setup_calibrate_internal_reference()
