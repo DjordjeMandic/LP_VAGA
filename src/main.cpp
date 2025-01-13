@@ -100,6 +100,10 @@ void setup()
     float supply_voltage = get_supply_voltage();
     Serial.print(F("AVCC voltage: "));
     Serial.print(supply_voltage, 3);
+    Serial.print(F("V ; Reference voltage: "));
+    uint16_t reference_voltage;
+    DataEEPROM::getInternalAdcReference(reference_voltage);
+    Serial.print(reference_voltage);
     Serial.print(F(" V, Minimum required: "));
     Serial.print(AVCC_MIN_VOLTAGE, 3);
     Serial.println(F(" V"));
