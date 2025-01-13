@@ -4,8 +4,6 @@
 #include <HX711.h>
 #include <power/HX711PowerManager.hpp>
 
-#warning Stabilizing time of 3-5 seconds should be included (keep reading at 10hz for 3-5 seconds constantly)
-
 #define SCALE_STABILIZATION_TIME_MS 3000
 
 /**
