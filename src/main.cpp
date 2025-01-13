@@ -93,9 +93,6 @@ void setup()
         bool inputComplete = false;
         unsigned long startTime = millis();
 
-        /* indicate start of procedure */
-        builtin_led_off();
-
         /* wait for user to input the voltage */
         do
         {
@@ -182,7 +179,7 @@ void setup()
     bool scale_status = true;
 
     /* indicate start of procedure */
-    builtin_led_off();
+    builtin_led_on();
 
     /* wait for scale to be ready */
     scale_status &= ScaleModule::waitReadyTimeout();
@@ -195,12 +192,36 @@ void setup()
         /* stabilize scale using dummy readings */
         scale_status &= ScaleModule::stabilize();
     }
+    
+    builtin_led_off();
 
     /* if failed to stabilize scale, block */
     if (!scale_status)
     {
         show_setup_result_final_block(RESULT_FAILURE);
     }
+
+    /* load scale parameters from EEPROM */
+    long tare_offset;
+    DataEEPROM::getScaleTareOffset(tare_offset);
+    float scale_factor;
+    DataEEPROM::getScaleCalibrationValue(scale_factor);
+
+    /* Apply scale parameters */
+    ScaleModule::setOffset(tare_offset);
+    ScaleModule::setScale(scale_factor);
+
+    Serial.print(F("Tare offset: "));
+    Serial.println(tare_offset);
+    Serial.print(F("Scale factor: "));
+    Serial.println(scale_factor, 5);
+
+    /* measure average 10x */
+    float measured_mass_kg = ScaleModule::getUnits(10);
+
+    Serial.print(F("Measured mass: "));
+    Serial.print(measured_mass_kg, 3);
+    Serial.println(F(" kg"));
 
     /* calibrate or tare scale if requested */
     if (calibrate_button_pressed || tare_button_pressed)
@@ -266,16 +287,6 @@ void setup()
             Serial.print(F("Saved scale factor: "));
             Serial.println(new_scale_factor);
 
-            /* Apply new scale factor */
-            ScaleModule::setScale(new_scale_factor);
-
-            /* measure again with new scale factor */
-            float measured_mass_kg = ScaleModule::getUnits(10);
-
-            Serial.print(F("Measured mass: "));
-            Serial.print(measured_mass_kg, 3);
-            Serial.println(F(" kg"));
-
             /* block end of calibration */
             show_setup_result_final_block(RESULT_SUCCESS);
         }
@@ -287,6 +298,9 @@ void setup()
 
     Serial.println(F("RTC initializing"));
 
+    /* indicate start of procedure */
+    builtin_led_on();
+
     /* power on rtc */
     RTCModule::preBeginPowerOn();
 
@@ -296,6 +310,8 @@ void setup()
         /* failed to setup rtc, power down with led blinking */
         show_setup_result_final_block(RESULT_FAILURE);
     }
+
+    builtin_led_off();
 
     /* check for power loss */
     if (RTCModule::lostPower())
@@ -338,10 +354,44 @@ void setup()
     Serial.print(F("RTC time: "));
     Serial.println(buffer);
 
-    /* Test DHT */
+    /* test DHT */
     Serial.println(F("DHT initializing"));
 
-    
+    /* initialize DHT sensor */
+    DHTModule::begin();
+
+    /* indicate start of procedure */
+    builtin_led_on();
+
+    /* wait for DHT sensor to power up */
+    sleep_until(SLEEP_MODE_IDLE, DHT22PowerManager::poweredOn());
+
+    builtin_led_off();
+
+    /* check if DHT sensor is ready */
+    if (!DHTModule::ready())
+    {
+        show_setup_result_final_block(RESULT_FAILURE);
+    }
+
+    float temp = DHTModule::readTemperature();
+    float humidity = DHTModule::readHumidity();
+
+    Serial.print(F("Temperature: "));
+    Serial.print(temp, 1);
+    Serial.print(F(" C ; Humidity: "));
+    Serial.print(humidity, 1);
+    Serial.println(F(" %"));
+
+    /* check if temperature and humidity are finite */
+    if (!isfinite(temp) || !isfinite(humidity))
+    {
+        show_setup_result_final_block(RESULT_FAILURE);
+    }
+
+    /* test GSM */
+
+    show_setup_result_final_block(RESULT_SUCCESS);
 }
 
 void loop()
