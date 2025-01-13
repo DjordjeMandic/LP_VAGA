@@ -407,7 +407,7 @@ float get_supply_voltage(uint8_t samples)
 
     /* get average adc reading of internal reference against avcc */
     uint16_t adc_reading = ADCHelper::avccSampleAverage(samples);
-
+    
     ADCHelper::end();
 
     uint16_t reference_voltage;
@@ -429,11 +429,17 @@ float get_supply_voltage(uint8_t samples)
  */
 float calculate_supply_voltage(uint16_t adc_value, uint16_t bandgap_voltage_mV)
 {
+    Serial.println(F("ADC"));
+    Serial.println(adc_value);
+
+    Serial.println(F("vbg"));
+    Serial.println(bandgap_voltage_mV);
+
     /* Calculate supply voltage, supply voltage is used as reference while sampling 1.1v bandgap */
     uint32_t supply_voltage_milivolts = (1024 * bandgap_voltage_mV);
     supply_voltage_milivolts += (adc_value / 2U);
     supply_voltage_milivolts /= adc_value;
-
+    Serial.println(supply_voltage_milivolts, 3);
     return static_cast<float>(supply_voltage_milivolts) / 1000.0f;
 }
 
