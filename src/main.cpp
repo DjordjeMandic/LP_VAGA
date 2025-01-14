@@ -99,15 +99,17 @@ void setup()
 
     /* check avcc voltage, power down if too low for modules to work */
     float supply_voltage = get_supply_voltage();
-
+    Serial.print(F("AVCC voltage: "));
+    Serial.print(supply_voltage, 3);
+    Serial.print(F("V ; Reference voltage: "));
+    uint16_t reference_voltage;
+    DataEEPROM::getInternalAdcReference(reference_voltage);
+    Serial.print(reference_voltage);
+    Serial.print(F(" V, Minimum required: "));
+    Serial.print(AVCC_MIN_VOLTAGE, 3);
+    Serial.println(F(" V"));
     if (supply_voltage < AVCC_MIN_VOLTAGE)
     {
-        Serial.print(F("AVCC voltage too low: "));
-        Serial.print(supply_voltage, 3);
-        Serial.print(F(" V, Minimum required: "));
-        Serial.print(AVCC_MIN_VOLTAGE, 3);
-        Serial.println(F(" V"));
-
         /* power down with led blinking */
         show_setup_result_final_block(RESULT_FAILURE);
     }
@@ -283,7 +285,7 @@ void setup()
         /* check if rtc time is valid */
         time_valid &= dt.isValid();
         /* check if rtc time is greater than timer mode time */
-        time_valid &= dt > timer_mode_datetime;
+        time_valid &= dt >= timer_mode_datetime;
 
         if (time_valid)
         {
@@ -306,6 +308,11 @@ void setup()
 
     /* test GSM, if test passes, send report */
 
+    if (time_valid)
+    {
+        show_setup_result_final_block(RESULT_SUCCESS);
+    }
+
     // dht_status - true if DHT passed the test
     // scale_status - true if scale passed the test
     // rtc_status - true if rtc is initialized
@@ -313,7 +320,7 @@ void setup()
     // timer_mode_time_adjusted - true if timer mode time is set
     // time_valid - true if time is valid
 
-    show_setup_result_final_block(RESULT_SUCCESS);
+    show_setup_result_final_block(RESULT_FAILURE);
 }
 
 void loop()
@@ -406,7 +413,7 @@ float get_supply_voltage(uint8_t samples)
 
     /* get average adc reading of internal reference against avcc */
     uint16_t adc_reading = ADCHelper::avccSampleAverage(samples);
-
+    
     ADCHelper::end();
 
     uint16_t reference_voltage;
@@ -429,11 +436,10 @@ float get_supply_voltage(uint8_t samples)
 float calculate_supply_voltage(uint16_t adc_value, uint16_t bandgap_voltage_mV)
 {
     /* Calculate supply voltage, supply voltage is used as reference while sampling 1.1v bandgap */
-    uint32_t supply_voltage_milivolts = (1024 * bandgap_voltage_mV);
+    uint32_t supply_voltage_milivolts = static_cast<uint32_t>((1 << 10) - 1) * bandgap_voltage_mV;
     supply_voltage_milivolts += (adc_value / 2U);
     supply_voltage_milivolts /= adc_value;
-
-    return static_cast<float>(supply_voltage_milivolts) / 1000.0f;
+    return (supply_voltage_milivolts * 1.0F) / 1000.0f;
 }
 
 bool setup_calibrate_internal_reference()
@@ -488,7 +494,7 @@ bool setup_calibrate_internal_reference()
     Serial.println(F(" mV"));
 
     /* set internal reference if within range */
-    if ((inputLong < 900 || inputLong > 1300))
+    if ((inputLong > 1000 || inputLong < 1200))
     {
         /* save to EEPROM */
         DataEEPROM::setInternalAdcReference(static_cast<uint16_t>(inputLong));
