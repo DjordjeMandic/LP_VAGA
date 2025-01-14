@@ -10,28 +10,29 @@ uint16_t EEMEM DataEEPROM::internalAdcReferenceEemem_ = 1100U;
 
 /* Getters */
 
-void DataEEPROM::getLastMeasurementKg(float& last_measurement_kg)
+float DataEEPROM::getLastMeasurementKg()
 {
     eeprom_busy_wait();
-    last_measurement_kg = eeprom_read_float(&lastMeasurementKgEemem_);
+    return eeprom_read_float(&lastMeasurementKgEemem_);
 }
 
-void DataEEPROM::getScaleCalibrationValue(float& scale_calibration_value)
+float DataEEPROM::getScaleCalibrationValue()
 {
     eeprom_busy_wait();
-    scale_calibration_value = eeprom_read_float(&scaleCalibrationValueEemem_);
+    return eeprom_read_float(&scaleCalibrationValueEemem_);
 }
 
-void DataEEPROM::getScaleTareOffset(long& scale_tare_offset)
+long DataEEPROM::getScaleTareOffset()
 {
+    long scale_tare_offset;
     eeprom_busy_wait();
     eeprom_read_block((void*)&scale_tare_offset, &scaleTareOffsetEemem_, sizeof(scale_tare_offset));
 }
 
-void DataEEPROM::getInternalAdcReference(uint16_t& internal_reference)
+uint16_t DataEEPROM::getInternalAdcReference()
 {
     eeprom_busy_wait();
-    internal_reference = eeprom_read_word(&internalAdcReferenceEemem_);
+    return eeprom_read_word(&internalAdcReferenceEemem_);
 }
 
 /* Setters */

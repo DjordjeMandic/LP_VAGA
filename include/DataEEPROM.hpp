@@ -15,31 +15,23 @@ class DataEEPROM
 public:
     /**
      * @brief Retrieves the last measurement in kilograms from EEPROM.
-     * 
-     * @param[out] last_measurement_kg Reference to store the retrieved value.
      */
-    static void getLastMeasurementKg(float& last_measurement_kg);
+    static float getLastMeasurementKg();
 
     /**
      * @brief Retrieves the scale calibration value from EEPROM.
-     * 
-     * @param[out] scale_calibration_value Reference to store the retrieved value.
      */
-    static void getScaleCalibrationValue(float& scale_calibration_value);
+    static float getScaleCalibrationValue();
 
     /**
      * @brief Retrieves the scale tare offset from EEPROM.
-     * 
-     * @param[out] scale_tare_offset Reference to store the retrieved value.
      */
-    static void getScaleTareOffset(long& scale_tare_offset);
+    static long getScaleTareOffset();
 
     /**
      * @brief Retrieves the internal ADC reference voltage from EEPROM.
-     * 
-     * @param[out] internal_reference Reference to store the retrieved value.
      */
-    static void getInternalAdcReference(uint16_t& internal_reference);
+    static uint16_t getInternalAdcReference();
 
     /**
      * @brief Updates the last measurement in kilograms in EEPROM.
