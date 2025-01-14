@@ -7,7 +7,7 @@
 #endif
 
 #ifndef AVCC_MIN_VOLTAGE
-#define AVCC_MIN_VOLTAGE 3.45
+#define AVCC_MIN_VOLTAGE 3.5 /* sim800 has undervoltage warning below 3.5 */
 #endif
 
 #ifndef ADC_AVCC_SAMPLES_DEFAULT

@@ -108,7 +108,7 @@ void setup()
         show_setup_result_final_block(RESULT_FAILURE);
     }
     /* check min avcc voltage constant */
-    static_assert(float(AVCC_MIN_VOLTAGE) > 3.3f, "AVCC_MIN_VOLTAGE must be above 3.3V for modules to work");
+    static_assert(float(AVCC_MIN_VOLTAGE) >= 3.5f, "AVCC_MIN_VOLTAGE must be above 3.5V for modules to work");
     static_assert(float(AVCC_MIN_VOLTAGE) < 4.2f, "AVCC_MIN_VOLTAGE must be below 4.2V");
     float supply_voltage = get_supply_voltage(); /* read supply voltage */
     Serial.print(F("AVCC: "));
@@ -271,10 +271,6 @@ void setup()
 
     /* test GSM, if test passes, send report */
 
-    if (rtc_time_valid)
-    {
-        show_setup_result_final_block(RESULT_SUCCESS);
-    }
 
     // dht_status - true if DHT passed the test
     // scale_status - true if scale passed the test
@@ -283,6 +279,8 @@ void setup()
     // timer_mode_time_adjusted - true if timer mode time is set
     // time_valid - true if time is valid
 
+
+    /* test failed, display result and block, do not continue to loop */
     show_setup_result_final_block(RESULT_FAILURE);
 }
 
