@@ -17,7 +17,7 @@ void RTCModule::preBeginPowerOn()
 {
     /* Power off the RTC to reset it */
     DS3231PowerManager::powerOff();
-    delay(1);
+    sleep_idle_timeout_millis(1);
 
     /* Power on the RTC */
     DS3231PowerManager::powerOn();

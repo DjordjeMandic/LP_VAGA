@@ -19,6 +19,8 @@
  */
 #define HX711_POWER_PIN_STATE_ON    HIGH
 
+static_assert(HX711_POWER_DELAY_MS >= 500, "HX711_POWER_DELAY_MS must be at least 500 ms.");
+
 /**
  * @brief Power manager for the HX711 load cell amplifier module.
  * 

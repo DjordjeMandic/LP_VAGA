@@ -2,6 +2,7 @@
 #include <DHT.h>
 #include <module/DHTModule.hpp>
 #include <power/DHT22PowerManager.hpp>
+#include <power/sleep.hpp>
 #include <Config.hpp>
 
 /* Static instance of the DHT sensor */
@@ -11,7 +12,7 @@ void DHTModule::begin(uint8_t pullup_time_us)
 {
     /* Power off the sensor to reset it */
     DHT22PowerManager::powerOff();
-    delay(1);
+    sleep_idle_timeout_millis(1);
 
     /* Power on the sensor and initialize it with the specified pull-up time */
     DHT22PowerManager::powerOn();

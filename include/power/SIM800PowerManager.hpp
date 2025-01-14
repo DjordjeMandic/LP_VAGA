@@ -18,6 +18,8 @@
  */
 #define SIM800_POWER_PIN_STATE_ON    HIGH
 
+static_assert(SIM800_POWER_DELAY_MS >= 500, "SIM800_POWER_DELAY_MS must be at least 500 ms.");
+
 /**
  * @brief Power manager for the SIM800 GSM module.
  * 

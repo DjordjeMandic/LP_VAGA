@@ -19,6 +19,8 @@
  */
 #define DS3231_POWER_PIN_STATE_ON   HIGH
 
+static_assert(DS3231_POWER_DELAY_MS >= 500, "DS3231_POWER_DELAY_MS must be at least 500 ms.");
+
 /**
  * @brief Power manager for the DS3231 real-time clock module.
  * 

@@ -11,7 +11,8 @@ HX711 ScaleModule::scale_;
 void ScaleModule::begin()
 {
     HX711PowerManager::powerOff();
-    delay(1);
+    sleep_idle_timeout_millis(1);
+    
     HX711PowerManager::powerOn();
     ScaleModule::scale_.begin(HX711_DOUT_PIN, HX711_CLK_PIN, HX711_GAIN_FACTOR);
 }

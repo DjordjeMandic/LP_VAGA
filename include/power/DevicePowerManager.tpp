@@ -26,7 +26,7 @@ void DevicePowerManager<PowerPin, PowerPinStateOn, PowerPinStateOff, PowerDelayM
     if (PowerPinStateOn == HIGH)
     {
         pinMode(PowerPin, INPUT_PULLUP);
-        delay(1);
+        sleep_idle_timeout_millis(1);
     }
     pinMode(PowerPin, OUTPUT);
     digitalWrite(PowerPin, PowerPinStateOn);
