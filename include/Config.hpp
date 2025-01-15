@@ -51,13 +51,8 @@
 #endif
 
 #ifndef SIM800_RESPONSE_TIMEOUT_MS
-#define SIM800_RESPONSE_TIMEOUT_MS 500
+#define SIM800_RESPONSE_TIMEOUT_MS 300
 #endif
-
-#ifdef AT_NL
-#undef AT_NL
-#endif 
-#define AT_NL "\r\n"
 
 #ifndef HX711_CLK_PIN
 #define HX711_CLK_PIN 8

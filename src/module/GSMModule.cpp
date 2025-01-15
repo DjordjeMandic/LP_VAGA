@@ -4,10 +4,10 @@
 #include <module/GSMModule.hpp>
 #include <SoftwareSerial.h>
 
-uint32_t smallerDiff(uint32_t a, uint32_t b)
-{
-    return min(a-b, b-a);
-}
+#define STRINGIFY(x) #x
+#define CONCAT_AT_BAUD_RATE_COMMAND(rate) "AT+IPR=" STRINGIFY(rate)
+
+static const char* SIM800_OK_RESPONSE = "OK";
 
 class DummyStream : public Stream {
 public:
@@ -19,6 +19,31 @@ public:
     using Print::write;
 };
 
+bool stream_clear_rx_buffer(Stream* stream)
+{
+    if (stream == nullptr)
+    {
+        return false;
+    }
+
+    while (stream->available() > 0)
+    {
+        stream->read();
+    }
+
+    return true;
+}
+
+bool send_command_and_wait(Stream* stream, const __FlashStringHelper* command, const char* expected_response = SIM800_OK_RESPONSE, unsigned long timeout = SIM800_RESPONSE_TIMEOUT_MS)
+{
+    if (!stream_clear_rx_buffer(stream))
+    {
+        return false;
+    }
+    stream->setTimeout(timeout);
+    stream->println(command);              // Send command and "\r\n"
+    return stream->find((char*)expected_response); // Wait for expected response
+}
 
 /* Static variable to track the readiness of the GSM Module */
 bool GSMModule::ready_ = false;
@@ -79,15 +104,30 @@ bool GSMModule::begin(unsigned long current_millis)
     /* start listening */
     GSMModule::software_serial_->begin(SIM800_BAUD_RATE);
 
+    bool baud_set = false;
+
     static_assert(SIM800_AUTOBAUD_ATTEMPTS > 0, "SIM800_AUTOBAUD_ATTEMPTS must be greater than 0.");
 
     /* start autobaud */
     for (int i = 0; i < SIM800_AUTOBAUD_ATTEMPTS; i++)
     {
-        /* send AT command */
-        GSMModule::software_serial_->print(F("AT"));
-        GSMModule::software_serial_->print(F(AT_NL));
-        //todo(djordjemandic)
+        if (send_command_and_wait(GSMModule::software_serial_, F("AT"), SIM800_OK_RESPONSE))
+        {
+            if (send_command_and_wait(GSMModule::software_serial_, F(CONCAT_AT_BAUD_RATE_COMMAND(SIM800_BAUD_RATE)), SIM800_OK_RESPONSE))
+            {
+                baud_set = true;
+                break;
+            }
+        }
+
+        /* sleep for 100ms */
+        sleep_idle_timeout_millis(100);
+    }
+
+    /* return false if baud rate could not be set */
+    if (!baud_set)
+    {
+        return false;
     }
 }
 
