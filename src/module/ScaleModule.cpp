@@ -24,9 +24,9 @@ void ScaleModule::end()
     HX711PowerManager::powerOff();
 }
 
-bool ScaleModule::ready()
+bool ScaleModule::ready(unsigned long current_millis)
 {
-    return HX711PowerManager::poweredOn() && ScaleModule::scale_.is_ready();
+    return HX711PowerManager::poweredOn(current_millis) && ScaleModule::scale_.is_ready();
 }
 
 bool ScaleModule::waitReady()

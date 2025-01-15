@@ -47,10 +47,10 @@ bool RTCModule::begin()
     return RTCModule::rtclibBeginResult_;
 }
 
-bool RTCModule::ready()
+bool RTCModule::ready(unsigned long current_millis)
 {
     /* Check if the RTC is powered on and initialized */
-    return DS3231PowerManager::poweredOn() && RTCModule::rtclibBeginResult_;
+    return DS3231PowerManager::poweredOn(current_millis) && RTCModule::rtclibBeginResult_;
 }
 
 void RTCModule::end()

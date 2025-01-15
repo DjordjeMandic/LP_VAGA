@@ -39,9 +39,12 @@ public:
      * This method verifies that the RTC is powered on and that initialization 
      * was successful.
      * 
+     * @param[in] current_millis The current time in milliseconds. If not provided, 
+     * `millis()` will be used.
+     * 
      * @return `true` if the RTC is ready, otherwise `false`.
      */
-    static bool ready();
+    static bool ready(unsigned long current_millis = millis());
     
     /**
      * @brief Powers off the RTC module and stops I2C communication.

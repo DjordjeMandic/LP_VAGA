@@ -35,9 +35,12 @@ public:
      * This method verifies that the sensor is powered on and ready to provide 
      * valid data.
      * 
+     * @param[in] current_millis The current time in milliseconds. If not provided, 
+     * `millis()` will be used.
+     * 
      * @return `true` if the sensor is ready to read, otherwise `false`.
      */
-    static bool ready();
+    static bool ready(unsigned long current_millis = millis());
     
     /**
      * @brief Reads data from the DHT sensor.

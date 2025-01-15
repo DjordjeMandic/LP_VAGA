@@ -26,10 +26,10 @@ void DHTModule::end()
     DHT22PowerManager::powerOff();
 }
 
-bool DHTModule::ready()
+bool DHTModule::ready(unsigned long current_millis)
 {
     /* Check if the sensor is powered on and ready */
-    return DHT22PowerManager::poweredOn() && DHTModule::dht_.read();
+    return DHT22PowerManager::poweredOn(current_millis) && DHTModule::dht_.read();
 }
 
 bool DHTModule::read(bool force)

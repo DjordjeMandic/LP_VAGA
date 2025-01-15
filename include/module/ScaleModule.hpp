@@ -32,9 +32,12 @@ public:
     /**
      * @brief Checks if the scale module is ready for reading.
      * 
+     * @param[in] current_millis The current time in milliseconds. If not provided, 
+     * `millis()` will be used.
+     * 
      * @return `true` if the scale is ready, otherwise `false`.
      */
-    static bool ready();
+    static bool ready(unsigned long current_millis = millis());
 
     /**
      * @brief Waits for the scale module to be ready.
