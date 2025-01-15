@@ -7,7 +7,13 @@
 #define STRINGIFY(x) #x
 #define CONCAT_AT_BAUD_RATE_COMMAND(rate) "AT+IPR=" STRINGIFY(rate)
 
+/* SIM800 OK response */
 static const char* SIM800_OK_RESPONSE = "OK";
+
+
+static_assert(GSM_FORMAT_BUFFER_SIZE >= _SS_MAX_RX_BUFF, "GSM_FORMAT_BUFFER_SIZE must be at least _SS_MAX_RX_BUFF.");
+/* SIM800 response buffer used for scanf */
+static char formatted_io_buffer[GSM_FORMAT_BUFFER_SIZE];
 
 class DummyStream : public Stream {
 public:
@@ -34,14 +40,21 @@ bool stream_clear_rx_buffer(Stream* stream)
     return true;
 }
 
-bool send_command_and_wait(Stream* stream, const __FlashStringHelper* command, const char* expected_response = SIM800_OK_RESPONSE, unsigned long timeout = SIM800_RESPONSE_TIMEOUT_MS)
+size_t send_command(Stream* stream, const __FlashStringHelper* command)
 {
     if (!stream_clear_rx_buffer(stream))
     {
         return false;
     }
-    stream->setTimeout(timeout);
     stream->println(command);              // Send command and "\r\n"
+}
+
+bool send_command_and_expect(Stream* stream, const __FlashStringHelper* command, const char* expected_response = SIM800_OK_RESPONSE)
+{
+    if (!send_command(stream, command))
+    {
+        return false;
+    }
     return stream->find((char*)expected_response); // Wait for expected response
 }
 
@@ -101,8 +114,11 @@ bool GSMModule::begin(unsigned long current_millis)
         (SIM800_BAUD_RATE == 38400),
         "SIM800_BAUD_RATE must be one of: 1200, 2400, 4800, 9600, 19200, 38400");
 
+    static_assert(SIM800_RESPONSE_TIMEOUT_MS > 100, "SIM800_RESPONSE_TIMEOUT_MS must be greater than 100.");
+
     /* start listening */
     GSMModule::software_serial_->begin(SIM800_BAUD_RATE);
+    GSMModule::software_serial_->setTimeout(SIM800_RESPONSE_TIMEOUT_MS);
 
     bool baud_set = false;
 
@@ -111,9 +127,9 @@ bool GSMModule::begin(unsigned long current_millis)
     /* start autobaud */
     for (int i = 0; i < SIM800_AUTOBAUD_ATTEMPTS; i++)
     {
-        if (send_command_and_wait(GSMModule::software_serial_, F("AT"), SIM800_OK_RESPONSE))
+        if (send_command_and_expect(GSMModule::software_serial_, F("AT"), SIM800_OK_RESPONSE))
         {
-            if (send_command_and_wait(GSMModule::software_serial_, F(CONCAT_AT_BAUD_RATE_COMMAND(SIM800_BAUD_RATE)), SIM800_OK_RESPONSE))
+            if (send_command_and_expect(GSMModule::software_serial_, F(CONCAT_AT_BAUD_RATE_COMMAND(SIM800_BAUD_RATE)), SIM800_OK_RESPONSE))
             {
                 baud_set = true;
                 break;
@@ -129,6 +145,23 @@ bool GSMModule::begin(unsigned long current_millis)
     {
         return false;
     }
+
+    return baud_set;
+}
+
+bool GSMModule::registeredOnNetwork()
+{
+    /* if module is not ready or command failed, return false */
+    if (!GSMModule::ready_ || !send_command(GSMModule::software_serial_, F("AT+CREG?")))
+    {
+        return false;
+    }
+
+
+
+    /* clear the formatted io buffer */
+    memset(formatted_io_buffer, 0, sizeof(formatted_io_buffer));
+
 }
 
 bool GSMModule::end()
