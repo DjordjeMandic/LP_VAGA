@@ -22,6 +22,7 @@ void ScaleModule::begin()
 
 void ScaleModule::end()
 {
+    ScaleModule::ready_ = false;
     pinMode(HX711_DOUT_PIN, INPUT);
     pinMode(HX711_CLK_PIN, INPUT);
     HX711PowerManager::powerOff();
@@ -36,7 +37,7 @@ bool ScaleModule::ready(unsigned long current_millis)
 
 bool ScaleModule::waitReady()
 {
-    if (!HX711PowerManager::poweredOn())
+    if (!HX711PowerManager::powerEnabled())
     {
         return false;
     }

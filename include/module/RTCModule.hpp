@@ -29,9 +29,12 @@ public:
      *       to prepare the RTC for initialization. To prevent blocking, before calling this method,
      *       ensure the RTC is powered on by calling `DS3231PowerManager::poweredOn()`.
      * 
+     * @param[in] current_millis The current time in milliseconds. If not provided, 
+     * `millis()` will be used.
+     * 
      * @return `true` if initialization was successful, otherwise `false`.
      */
-    static bool begin();
+    static bool begin(unsigned long current_millis = millis());
     
     /**
      * @brief Checks if the RTC module is ready for use.

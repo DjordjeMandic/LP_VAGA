@@ -73,6 +73,30 @@ public:
      * @return `true` if the device is powered on and ready, otherwise `false`.
      */
     static bool poweredOn(unsigned long current_millis = millis());
+
+    /**
+     * @brief Check if the device is currently powered (power pin in active state).
+     * 
+     * This method reads the state of the power pin using `digitalRead` and compares it 
+     * with the active state (`PowerPinStateOn`).
+     * 
+     * @return `true` if the power pin is currently in the active state, otherwise `false`.
+     */
+    static bool powerEnabled();
+
+    /**
+     * @brief Get the remaining delay time (in milliseconds) required for the device to be ready.
+     * 
+     * This method calculates how much time is left until the required delay time 
+     * (`PowerDelayMs`) has elapsed since the device was powered on.
+     * 
+     * @param[in] current_millis The current time in milliseconds. If not provided, 
+     * `millis()` will be used.
+     * 
+     * @return The remaining delay time in milliseconds. If the delay has already elapsed,
+     * it returns 0.
+     */
+    static unsigned long requiredPowerOnDelay(unsigned long current_millis = millis());
 };
 
 #include <power/DevicePowerManager.tpp> // Include the template definitions

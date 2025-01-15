@@ -42,6 +42,23 @@
 #define SIM800_RX_PIN 7
 #endif
 
+#ifndef SIM800_BAUD_RATE
+#define SIM800_BAUD_RATE 9600
+#endif
+
+#ifndef SIM800_AUTOBAUD_ATTEMPTS
+#define SIM800_AUTOBAUD_ATTEMPTS 5
+#endif
+
+#ifndef SIM800_RESPONSE_TIMEOUT_MS
+#define SIM800_RESPONSE_TIMEOUT_MS 500
+#endif
+
+#ifdef AT_NL
+#undef AT_NL
+#endif 
+#define AT_NL "\r\n"
+
 #ifndef HX711_CLK_PIN
 #define HX711_CLK_PIN 8
 #endif

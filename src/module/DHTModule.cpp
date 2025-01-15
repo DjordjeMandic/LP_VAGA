@@ -24,6 +24,7 @@ void DHTModule::begin(uint8_t pullup_time_us)
 
 void DHTModule::end()
 {
+    DHTModule::ready_ = false;
     /* Set the data pin to input mode and power off the sensor */
     pinMode(DHT22_DATA_PIN, INPUT);
     DHT22PowerManager::powerOff();

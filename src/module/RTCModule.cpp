@@ -26,10 +26,21 @@ void RTCModule::preBeginPowerOn()
     DS3231PowerManager::powerOn();
 }
 
-bool RTCModule::begin()
+bool RTCModule::begin(unsigned long current_millis)
 {
-    /* Ensure the RTC is powered on before attempting initialization */
-    sleep_until(SLEEP_MODE_IDLE, DS3231PowerManager::poweredOn());
+    /* Ensure the RTC has power enabled */
+    if (!DS3231PowerManager::powerEnabled())
+    {
+        DS3231PowerManager::powerOn();
+
+        /* Wait for the RTC to power on */
+        sleep_until(SLEEP_MODE_IDLE, DS3231PowerManager::poweredOn());
+    }
+    else if (!DS3231PowerManager::poweredOn(current_millis))
+    {
+        /* Wait for the RTC to power on */
+        sleep_idle_timeout_millis(min(current_millis-millis(), millis()-current_millis));
+    } // todo implement like in gsmmodule
 
     /* Start I2C communication */
     twi_power_on();
@@ -59,6 +70,8 @@ bool RTCModule::ready(unsigned long current_millis)
 
 void RTCModule::end()
 {
+    RTCModule::ready_ = false;
+    RTCModule::rtclibBeginResult_ = false;
     /* Stop I2C communication and power off the RTC */
     Wire.end();
     twi_power_off();
