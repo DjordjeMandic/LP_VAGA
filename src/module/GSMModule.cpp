@@ -45,11 +45,8 @@ bool GSMModule::begin(unsigned long current_millis)
     }
 
     /* make sure its powered on */
-    unsigned long required_power_on_delay = SIM800PowerManager::requiredPowerOnDelay(current_millis);
-    if (required_power_on_delay > 0)
-    {
-        sleep_idle_timeout_millis(required_power_on_delay);
-    }
+    sleep_idle_timeout_millis(SIM800PowerManager::requiredPowerOnDelay(current_millis));
+    
 
     /* initialize the SoftwareSerial instance */
     if (GSMModule::software_serial_ == nullptr)
