@@ -8,6 +8,9 @@
 /* Static instance of the DHT sensor */
 DHT DHTModule::dht_(DHT22_DATA_PIN, DHT_TYPE);
 
+/* Static variable to track the readiness of the DHT sensor */
+bool DHTModule::ready_ = false;
+
 void DHTModule::begin(uint8_t pullup_time_us)
 {
     /* Power off the sensor to reset it */
@@ -29,13 +32,14 @@ void DHTModule::end()
 bool DHTModule::ready(unsigned long current_millis)
 {
     /* Check if the sensor is powered on and ready */
-    return DHT22PowerManager::poweredOn(current_millis) && DHTModule::dht_.read();
+    DHTModule::ready_ = DHT22PowerManager::poweredOn(current_millis) && DHTModule::dht_.read();
+    return DHTModule::ready_;
 }
 
 bool DHTModule::read(bool force)
 {
     /* Ensure the sensor is powered on before reading data */
-    if (!DHT22PowerManager::poweredOn())
+    if (!DHTModule::ready_)
     {
         return false;
     }
@@ -45,7 +49,7 @@ bool DHTModule::read(bool force)
 float DHTModule::readTemperature()
 {
     /* Ensure the sensor is powered on before reading temperature */
-    if (!DHT22PowerManager::poweredOn())
+    if (!DHTModule::ready_)
     {
         return NAN;
     }
@@ -55,7 +59,7 @@ float DHTModule::readTemperature()
 float DHTModule::readHumidity()
 {
     /* Ensure the sensor is powered on before reading humidity */
-    if (!DHT22PowerManager::poweredOn())
+    if (!DHTModule::ready_)
     {
         return NAN;
     }

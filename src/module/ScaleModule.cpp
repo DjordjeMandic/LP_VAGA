@@ -8,6 +8,9 @@
 /* Static instance of the HX711 */
 HX711 ScaleModule::scale_;
 
+/* Static variable to track the readiness of the HX711 */
+bool ScaleModule::ready_ = false;
+
 void ScaleModule::begin()
 {
     HX711PowerManager::powerOff();
@@ -26,7 +29,9 @@ void ScaleModule::end()
 
 bool ScaleModule::ready(unsigned long current_millis)
 {
-    return HX711PowerManager::poweredOn(current_millis) && ScaleModule::scale_.is_ready();
+    /*  Check if the HX711 is powered on and ready */
+    ScaleModule::ready_ = HX711PowerManager::poweredOn(current_millis) && ScaleModule::scale_.is_ready();
+    return ScaleModule::ready_;
 }
 
 bool ScaleModule::waitReady()
@@ -78,7 +83,7 @@ bool ScaleModule::waitReadyTimeout(const unsigned long timeout, const unsigned l
 
 bool ScaleModule::stabilize(const uint16_t stabilization_time_ms)
 {
-    if (!HX711PowerManager::poweredOn())
+    if (!ScaleModule::ready_)
     {
         return false;
     }
@@ -103,7 +108,7 @@ bool ScaleModule::stabilize(const uint16_t stabilization_time_ms)
 
 long ScaleModule::read()
 {
-    if (!HX711PowerManager::poweredOn())
+    if (!ScaleModule::ready_)
     {
         return 0;
     }
@@ -113,7 +118,7 @@ long ScaleModule::read()
 
 long ScaleModule::readAverage(const uint8_t times)
 {
-    if (!HX711PowerManager::poweredOn())
+    if (!ScaleModule::ready_)
     {
         return 0;
     }
@@ -123,7 +128,7 @@ long ScaleModule::readAverage(const uint8_t times)
 
 double ScaleModule::getValue(const uint8_t times)
 {
-    if (!HX711PowerManager::poweredOn())
+    if (!ScaleModule::ready_)
     {
         return 0.0;
     }
@@ -133,7 +138,7 @@ double ScaleModule::getValue(const uint8_t times)
 
 float ScaleModule::getUnits(const uint8_t times)
 {
-    if (!HX711PowerManager::poweredOn())
+    if (!ScaleModule::ready_)
     {
         return NAN;
     }
@@ -143,7 +148,7 @@ float ScaleModule::getUnits(const uint8_t times)
 
 bool ScaleModule::tare(const uint8_t times)
 {
-    if (!HX711PowerManager::poweredOn())
+    if (!ScaleModule::ready_)
     {
         return false;
     }

@@ -94,4 +94,5 @@ public:
 private:
     static RTC_DS3231 rtc_; /**< Static instance of the RTC_DS3231 class for managing RTC operations. */
     static bool rtclibBeginResult_; /**< Stores the result of the RTC initialization. */
+    static bool ready_; /**< Stores the readiness state of the RTC. */
 };

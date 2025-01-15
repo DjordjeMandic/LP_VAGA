@@ -75,5 +75,6 @@ public:
     
 private:
     static DHT dht_; /**< Static instance of the DHT sensor class for managing sensor operations. */
+    static bool ready_; /**< Stores the readiness state of the DHT sensor. */
 };
 

@@ -139,4 +139,5 @@ public:
 
 private:
     static HX711 scale_; /**< Static instance of the HX711 class for managing scale operations. */
+    static bool ready_; /**< Stores the readiness state of the scale. */
 };
