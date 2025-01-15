@@ -31,6 +31,6 @@ static_assert(DHT22_POWER_DELAY_MS >= 2050, "DHT22_POWER_DELAY_MS must be at lea
  * 
  * - **Power States**: ON (`DHT22_POWER_PIN_STATE_ON`), OFF (`DHT22_POWER_PIN_STATE_OFF`).
  * 
- * - **Delay**: Requires 3000 ms after powering on.
+ * - **Delay**: Requires 2050 ms after powering on.
  */
 using DHT22PowerManager = DevicePowerManager<DHT22_POWER_PIN, DHT22_POWER_PIN_STATE_ON, DHT22_POWER_PIN_STATE_OFF, DHT22_POWER_DELAY_MS, true>;

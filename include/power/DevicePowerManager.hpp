@@ -52,10 +52,13 @@ public:
     /**
      * @brief Check if the required delay time after powering on the device has elapsed.
      * 
+     * @param[in] current_millis The current time in milliseconds. If not provided, 
+     * `millis()` will be used.
+     * 
      * @return `true` if the delay (defined by `PowerDelayMs`) has elapsed since 
      * the device was powered on, otherwise `false`.
      */
-    static bool powerDelayCheck();
+    static bool powerDelayCheck(unsigned long current_millis = millis());
 
     /**
      * @brief Check if the device is powered on and ready for use.
@@ -64,9 +67,12 @@ public:
      * required delay time (`PowerDelayMs`) has elapsed since the device 
      * was powered on.
      * 
+     * @param[in] current_millis The current time in milliseconds. If not provided, 
+     * `millis()` will be used.
+     * 
      * @return `true` if the device is powered on and ready, otherwise `false`.
      */
-    static bool poweredOn();
+    static bool poweredOn(unsigned long current_millis = millis());
 };
 
 #include <power/DevicePowerManager.tpp> // Include the template definitions

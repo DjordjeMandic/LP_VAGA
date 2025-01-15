@@ -34,15 +34,15 @@ void DevicePowerManager<PowerPin, PowerPinStateOn, PowerPinStateOff, PowerDelayM
 }
 
 template <uint8_t PowerPin, bool PowerPinStateOn, bool PowerPinStateOff, unsigned long PowerDelayMs, bool AllowFloat>
-bool DevicePowerManager<PowerPin, PowerPinStateOn, PowerPinStateOff, PowerDelayMs, AllowFloat>::powerDelayCheck()
+bool DevicePowerManager<PowerPin, PowerPinStateOn, PowerPinStateOff, PowerDelayMs, AllowFloat>::powerDelayCheck(unsigned long current_millis)
 {
-    return millis() - power_on_millis_ >= PowerDelayMs;
+    return current_millis - power_on_millis_ >= PowerDelayMs;
 }
 
 template <uint8_t PowerPin, bool PowerPinStateOn, bool PowerPinStateOff, unsigned long PowerDelayMs, bool AllowFloat>
-bool DevicePowerManager<PowerPin, PowerPinStateOn, PowerPinStateOff, PowerDelayMs, AllowFloat>::poweredOn()
+bool DevicePowerManager<PowerPin, PowerPinStateOn, PowerPinStateOff, PowerDelayMs, AllowFloat>::poweredOn(unsigned long current_millis)
 {
-    return (digitalRead(PowerPin) == PowerPinStateOn) && powerDelayCheck();
+    return (digitalRead(PowerPin) == PowerPinStateOn) && powerDelayCheck(current_millis);
 }
 
 // Only provide the powerFloat() function if AllowFloat is true
