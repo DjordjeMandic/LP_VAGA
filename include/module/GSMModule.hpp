@@ -3,8 +3,6 @@
 #include <Arduino.h>
 #include <Config.hpp>
 #include <power/SIM800PowerManager.hpp>
-
-#define _SS_MAX_RX_BUFF 256
 #include <SoftwareSerial.h>
 
 #define gsm_return_if_not_powered_on(x) { if (!SIM800PowerManager::powered_on()) { return x; } }
@@ -12,7 +10,7 @@
 
 static_assert(_SS_MAX_RX_BUFF >= 256, "SS_MAX_RX_BUFF must be at least 256.");
 
-#define GSM_FORMAT_BUFFER_SIZE _SS_MAX_RX_BUFF+128
+#define GSM_FORMAT_BUFFER_SIZE _SS_MAX_RX_BUFF
 
 // VBAT goes high, wait 1.4 seconds
 // VDD goes high, wait 3 seconds, UART ready
@@ -25,7 +23,7 @@ public:
 
     static bool begin(unsigned long current_millis = millis());
 
-    static bool end();
+    static void end();
 
     static bool registeredOnNetwork();
 

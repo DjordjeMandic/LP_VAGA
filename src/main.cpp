@@ -16,6 +16,7 @@
 #include <RTClib.h>
 #include <DHT.h>
 #include <Strings_EN.h>
+#include <module/GSMModule.hpp>
 
 
 #define BUTTON_PIN_MODE(BUTTON_ACTIVE_STATE) (BUTTON_ACTIVE_STATE == LOW ? INPUT_PULLUP : INPUT)
@@ -69,6 +70,9 @@ void setup()
     
     /* alive signal */
     builtin_led_on();
+
+    GSMModule::begin();
+    GSMModule::registeredOnNetwork();
 
     /* configure buttons */
     pinMode(BUTTON_CALIBRATE_PIN, BUTTON_PIN_MODE(BUTTON_CALIBRATE_PIN_ACTIVE_STATE));

@@ -10,10 +10,9 @@
 /* SIM800 OK response */
 static const char* SIM800_OK_RESPONSE = "OK";
 
-
 static_assert(GSM_FORMAT_BUFFER_SIZE >= _SS_MAX_RX_BUFF, "GSM_FORMAT_BUFFER_SIZE must be at least _SS_MAX_RX_BUFF.");
-/* SIM800 response buffer used for scanf */
-static char formatted_io_buffer[GSM_FORMAT_BUFFER_SIZE];
+/* SIM800 response buffer */
+static char response_buffer[GSM_FORMAT_BUFFER_SIZE];
 
 class DummyStream : public Stream {
 public:
@@ -24,6 +23,24 @@ public:
     size_t write(uint8_t) override { return 0; }
     using Print::write;
 };
+
+size_t stream_copy_rx_buffer_to(Stream* serial, char* buffer, size_t buffer_size)
+{
+    if (serial == nullptr || buffer == nullptr || buffer_size == 0)
+    {
+        return 0; // Invalid arguments
+    }
+
+    size_t index = 0;
+
+    while (serial->available() > 0 && index < buffer_size - 1)
+    {
+        buffer[index++] = serial->read(); // Read a byte into the buffer
+    }
+
+    buffer[index] = '\0'; // Null-terminate the string
+    return index;         // Return the number of bytes copied
+}
 
 bool stream_clear_rx_buffer(Stream* stream)
 {
@@ -44,9 +61,20 @@ size_t send_command(Stream* stream, const __FlashStringHelper* command)
 {
     if (!stream_clear_rx_buffer(stream))
     {
-        return false;
+        return 0;
     }
-    stream->println(command);              // Send command and "\r\n"
+
+    return stream->println(command);              // Send command and "\r\n"
+}
+
+size_t send_command_and_copy_respone(Stream* stream, const __FlashStringHelper* command, char* buffer, size_t buffer_size)
+{
+    if (!send_command(stream, command))
+    {
+        return 0;
+    }
+
+    return stream_copy_rx_buffer_to(stream, buffer, buffer_size);
 }
 
 bool send_command_and_expect(Stream* stream, const __FlashStringHelper* command, const char* expected_response = SIM800_OK_RESPONSE)
@@ -76,6 +104,8 @@ void GSMModule::preBeginPowerOn()
 
 bool GSMModule::begin(unsigned long current_millis)
 {
+    GSMModule::ready_ = false;
+    
     /* Power on the SIM800 if needed */
     if (!SIM800PowerManager::powerEnabled())
     {
@@ -120,8 +150,6 @@ bool GSMModule::begin(unsigned long current_millis)
     GSMModule::software_serial_->begin(SIM800_BAUD_RATE);
     GSMModule::software_serial_->setTimeout(SIM800_RESPONSE_TIMEOUT_MS);
 
-    bool baud_set = false;
-
     static_assert(SIM800_AUTOBAUD_ATTEMPTS > 0, "SIM800_AUTOBAUD_ATTEMPTS must be greater than 0.");
 
     /* start autobaud */
@@ -131,7 +159,7 @@ bool GSMModule::begin(unsigned long current_millis)
         {
             if (send_command_and_expect(GSMModule::software_serial_, F(CONCAT_AT_BAUD_RATE_COMMAND(SIM800_BAUD_RATE)), SIM800_OK_RESPONSE))
             {
-                baud_set = true;
+                GSMModule::ready_ = true;
                 break;
             }
         }
@@ -140,31 +168,49 @@ bool GSMModule::begin(unsigned long current_millis)
         sleep_idle_timeout_millis(100);
     }
 
-    /* return false if baud rate could not be set */
-    if (!baud_set)
-    {
-        return false;
-    }
-
-    return baud_set;
+    return GSMModule::ready_;
 }
 
 bool GSMModule::registeredOnNetwork()
 {
     /* if module is not ready or command failed, return false */
-    if (!GSMModule::ready_ || !send_command(GSMModule::software_serial_, F("AT+CREG?")))
+    if (!GSMModule::ready_ || !send_command_and_copy_respone(GSMModule::software_serial_, F("AT+CREG?"), response_buffer, sizeof(response_buffer)))
     {
         return false;
     }
 
 
+    /* Look for +CREG: x,y in the response */
+    static const char PROGMEM key[] = "+CREG:";
+    const char* start = strstr_P(response_buffer, key);
 
-    /* clear the formatted io buffer */
-    memset(formatted_io_buffer, 0, sizeof(formatted_io_buffer));
+    if (start)
+    {
+        /* Move past "+CREG: " */
+        start += strlen_P(key);
 
+        /* Parse the first number (x) and skip to the second */
+        char* end;
+        strtol(start, &end, 10); // Parse and skip the first number (x)
+
+        if (*end == ',')
+        {
+            /* Parse the second number (y) */
+            long reg_status = strtol(end + 1, NULL, 10);
+
+            /* Check if registered */
+            if (reg_status == 1 || reg_status == 5) // 1: Home, 5: Roaming
+            {
+                return true;
+            }
+        }
+    }
+
+    /* not registered */
+    return false;
 }
 
-bool GSMModule::end()
+void GSMModule::end()
 {
     GSMModule::ready_ = false;
 
