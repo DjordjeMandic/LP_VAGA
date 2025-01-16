@@ -27,6 +27,7 @@ long DataEEPROM::getScaleTareOffset()
     long scale_tare_offset;
     eeprom_busy_wait();
     eeprom_read_block((void*)&scale_tare_offset, &scaleTareOffsetEemem_, sizeof(scale_tare_offset));
+    return scale_tare_offset;
 }
 
 uint16_t DataEEPROM::getInternalAdcReference()
