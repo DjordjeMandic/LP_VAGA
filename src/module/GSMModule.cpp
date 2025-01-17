@@ -79,38 +79,46 @@ size_t clear_rx_buffer_and_send_at_command(Stream* stream, const __FlashStringHe
     return sent;
 }
 
-size_t send_at_command_and_copy_response_to(Stream* stream, const __FlashStringHelper* command, char* buffer, size_t buffer_size)
+size_t send_at_command_and_copy_response_to(Stream* stream, const __FlashStringHelper* command, char* buffer, size_t buffer_size, unsigned long response_delay_ms = 500)
 {
     if (buffer == nullptr || buffer_size == 0 || !clear_rx_buffer_and_send_at_command(stream, command))
     {
         return 0;
     }
 
+    /* wait for response */
+    delay(response_delay_ms);
+
     /* wait for response*/
     static_assert(SIM800_RESPONSE_TIMEOUT_MS > 200, "SIM800_RESPONSE_TIMEOUT_MS must be greater than 200.");
     unsigned long start = millis();
     size_t index = 0;
-    while (millis() - start < SIM800_RESPONSE_TIMEOUT_MS)
+    /* repeat until timeout */
+    while ((millis() - start < SIM800_RESPONSE_TIMEOUT_MS))
     {
-        /* break if buffer is full */
-        if (index == buffer_size - 1)
-        {
-            break;
-        }
-
         /* if data available */
-        if (stream->available() > 0)
+        while (stream->available() > 0)
         {
+            /* if buffer is full */
+            if (index == buffer_size - 1)
+            {
+                break;
+            }
+
             /* read data from stream */
             buffer[index++] = stream->read();
 
-            /* restart timeout */
-            start = millis();
+            /* wait for next bit to arrive */
+            if (stream->available() == 0)
+            {
+                delay(10);   
+            }
         }
-        else
+
+        /* some data was read */
+        if (index > 0)
         {
-            /* no data available */
-            sleep_idle_timeout_millis(10);
+            break;
         }
     }
 
@@ -120,9 +128,9 @@ size_t send_at_command_and_copy_response_to(Stream* stream, const __FlashStringH
     return index;
 }
 
-bool send_at_command_and_expect(Stream* stream, const __FlashStringHelper* command, const __FlashStringHelper* expected_in_response)
+bool send_at_command_and_expect(Stream* stream, const __FlashStringHelper* command, const __FlashStringHelper* expected_in_response, unsigned long response_delay_ms = 500)
 {
-    if (expected_in_response == nullptr || !send_at_command_and_copy_response_to(stream, command, response_buffer, sizeof(response_buffer)))
+    if (expected_in_response == nullptr || !send_at_command_and_copy_response_to(stream, command, response_buffer, sizeof(response_buffer), response_delay_ms))
     {
         return false;
     }
@@ -132,7 +140,7 @@ bool send_at_command_and_expect(Stream* stream, const __FlashStringHelper* comma
 
 bool send_at_command_and_expect_ok(Stream* stream, const __FlashStringHelper* command)
 {
-    return send_at_command_and_expect(stream, command, FPSTR(OK_STRING_P));
+    return send_at_command_and_expect(stream, command, FPSTR(OK_STRING_P), 100);
 }
 
 /* Static variable to track the readiness of the GSM Module */
@@ -222,7 +230,7 @@ bool GSMModule::begin(unsigned long current_millis)
 bool GSMModule::registeredOnNetwork()
 {
     /* if module is not ready or command failed, return false */
-    if (!GSMModule::ready_ || !send_at_command_and_copy_response_to(GSMModule::software_serial_, F("+CREG?"), response_buffer, sizeof(response_buffer)))
+    if (!GSMModule::ready_ || !send_at_command_and_copy_response_to(GSMModule::software_serial_, F("+CREG?"), response_buffer, sizeof(response_buffer), 1500))
     {
         return false;
     }
