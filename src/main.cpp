@@ -258,12 +258,16 @@ void setup()
         /* if rtc time is valid print it */
         if (rtc_time_valid)
         {
-            /* output date and time to buffer */
-            char buffer[21] = "DD-MMM-YYYY hh:mm:ss";
-            date_time.toString(buffer);
-
-            Serial.print(F(STRING_RTC_TIME_SC_SPACE));
-            Serial.println(buffer);
+            /* print time */
+            Serial.printf(
+                F(STRING_RTC_TIME_SC_SPACE "%02u/%02u/%04u %02u:%02u:%02u\n"),
+                date_time.day(),     // DD
+                date_time.month(),   // MM
+                date_time.year(),    // YYYY
+                date_time.hour(),    // HH
+                date_time.minute(),  // MM
+                date_time.second()   // SS
+            );
         }
         rtc_time_valid &= date_time >= timer_mode_datetime; /* check if rtc time is greater than or equal to timer mode time */
         if (!rtc_time_valid)
