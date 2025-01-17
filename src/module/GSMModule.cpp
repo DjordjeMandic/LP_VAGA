@@ -227,31 +227,12 @@ bool GSMModule::registeredOnNetwork()
         return false;
     }
 
-    /* look for +CREG: x,y in the response */
-    static const char key_fp[] PROGMEM = "+CREG:";
-    const char* start = strstr_P(response_buffer, key_fp);
-
-    if (start != nullptr)
-    {
-        /* move past key */
-        start += strlen_P(key_fp);
-
-        /* parse the first number (x) and skip to the second */
-        char* end;
-        strtol(start, &end, 10);
-
-        if (*end == ',')
-        {
-            /* parse the second number (y) */
-            long reg_status = strtol(end + 1, nullptr, 10);
-
-            /* check if registered */
-            return reg_status == 1 || reg_status == 5; // 1: Home, 5: Roaming
-        }
-    }
-
-    /* failed to parse, not registered */
-    return false;
+    /* variable to hold parsed state */
+    uint8_t registration_state = 0;
+    
+    /* parse state, return false if parsing failed or its not 1 or 5 */
+    return (sscanf_P(response_buffer, PSTR("%*[^+]+CREG: %*u,%hhu"), &registration_state) == 1) 
+            && ((registration_state == 1) || (registration_state == 5));
 }
 
 void GSMModule::end()
