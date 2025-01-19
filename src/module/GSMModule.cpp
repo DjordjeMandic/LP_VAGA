@@ -13,16 +13,18 @@
 /* casts to PGM_P */
 #define FP(fsh_pointer) (reinterpret_cast<PGM_P>(fsh_pointer))
 
-static const char EMPTY_STR_P[] PROGMEM = "";
-#define EMPTY_FPSTR FPSTR(EMPTY_STR_P)
+//static const char EMPTY_STR_P[] PROGMEM = "";
+//#define EMPTY_FPSTR FPSTR(EMPTY_STR_P)
 
 /* SIM800 responses */
 static const char OK_STRING_P[] PROGMEM = "OK";
 static const char ERROR_STRING_P[] PROGMEM = "ERROR";
 
-static_assert(GSM_FORMAT_BUFFER_SIZE >= _SS_MAX_RX_BUFF, "GSM_FORMAT_BUFFER_SIZE must be at least _SS_MAX_RX_BUFF.");
+static const char RESPONSE_FMT_PARSER_CREG_CSQ_P[] PROGMEM = "%*[^+]+%*[^:]: %hhu,%hhu";
+
+static_assert(GSM_RESPONSE_BUFFER_SIZE >= _SS_MAX_RX_BUFF, "GSM_RESPONSE_BUFFER_SIZE must be at least _SS_MAX_RX_BUFF.");
 /* SIM800 response buffer */
-static char response_buffer[GSM_FORMAT_BUFFER_SIZE];
+static char response_buffer[GSM_RESPONSE_BUFFER_SIZE];
 
 class DummyStream : public Stream {
 public:
@@ -41,17 +43,21 @@ bool stream_clear_rx_buffer(Stream* stream)
         return false;
     }
 
+    /* clear serial rx buffer */
     while (stream->available() > 0)
     {
         stream->read();
     }
+
+    /* clear response_buffer */
+    memset(response_buffer, '\0', sizeof(response_buffer));
 
     return true;
 }
 
 size_t clear_rx_buffer_and_send_at_command(Stream* stream, const __FlashStringHelper* command)
 {
-    if (command == nullptr || !stream_clear_rx_buffer(stream))
+    if (!stream_clear_rx_buffer(stream))
     {
         return 0;
     }
@@ -61,17 +67,22 @@ size_t clear_rx_buffer_and_send_at_command(Stream* stream, const __FlashStringHe
     /* send AT */
     sent += stream->print(F("AT"));
 
-    static_assert(GSM_COMMAND_MAX_LEN >= _SS_MAX_RX_BUFF, "GSM_COMMAND_MAX_LEN must be greater than or equal to _SS_MAX_RX_BUFF.");
-
-    /* get lenght of command */
-    size_t cmd_len = strnlen_P(FP(command), GSM_COMMAND_MAX_LEN);
-
-    if (cmd_len > 0 && cmd_len < GSM_COMMAND_MAX_LEN)
+    if (command != nullptr)
     {
-        /* send command only if it is not empty and not too long */
-        sent += stream->print(command);
-    }
+        /* sim800 rx buffer is 556bytes */
+        static_assert(GSM_COMMAND_MAX_LEN < 556 && GSM_COMMAND_MAX_LEN >= 0, "GSM_COMMAND_MAX_LEN must be greater than 0 and less than 556.");
 
+        /* get lenght of command */
+        size_t cmd_len = strnlen_P(FP(command), GSM_COMMAND_MAX_LEN);
+
+        /* cmd_len equals to GSM_COMMAND_MAX_LEN if no '\0' was found */
+        if (cmd_len > 0 && cmd_len < GSM_COMMAND_MAX_LEN)
+        {
+            /* send command only if it is not empty and not too long */
+            sent += stream->print(command);
+        }
+    }
+    
     /* send "\r\n" */
     sent += stream->println();
 
@@ -79,68 +90,31 @@ size_t clear_rx_buffer_and_send_at_command(Stream* stream, const __FlashStringHe
     return sent;
 }
 
-size_t send_at_command_and_copy_response_to(Stream* stream, const __FlashStringHelper* command, char* buffer, size_t buffer_size, unsigned long response_delay_ms = 500)
+size_t send_at_command_and_copy_response_to(Stream* stream, const __FlashStringHelper* command, char* buffer, size_t buffer_size, unsigned long response_timeout_ms = SIM800_SERIAL_TIMEOUT_MS)
 {
     if (buffer == nullptr || buffer_size == 0 || !clear_rx_buffer_and_send_at_command(stream, command))
     {
         return 0;
     }
 
-    /* wait for response */
-    delay(response_delay_ms);
-
     /* wait for response*/
-    static_assert(SIM800_RESPONSE_TIMEOUT_MS > 200, "SIM800_RESPONSE_TIMEOUT_MS must be greater than 200.");
+    size_t chars_read_into_buffer = 0;
     unsigned long start = millis();
-    size_t index = 0;
-    /* repeat until timeout */
-    while ((millis() - start < SIM800_RESPONSE_TIMEOUT_MS))
+    do
     {
-        /* if data available */
-        while (stream->available() > 0)
-        {
-            /* if buffer is full */
-            if (index == buffer_size - 1)
-            {
-                break;
-            }
-
-            /* read data from stream */
-            buffer[index++] = stream->read();
-
-            /* wait for next bit to arrive */
-            if (stream->available() == 0)
-            {
-                delay(10);   
-            }
-        }
-
-        /* some data was read */
-        if (index > 0)
-        {
-            break;
-        }
-    }
-
+        chars_read_into_buffer = stream->readBytes(buffer, buffer_size);
+    } while ((chars_read_into_buffer == 0) && (millis() - start < response_timeout_ms));
+    
     /* null terminate buffer */
-    buffer[index] = '\0';
+    buffer[chars_read_into_buffer] = '\0';
 
-    return index;
+    return chars_read_into_buffer;
 }
 
-bool send_at_command_and_expect(Stream* stream, const __FlashStringHelper* command, const __FlashStringHelper* expected_in_response, unsigned long response_delay_ms = 500)
+bool send_at_command_and_expect_ok(Stream* stream, const __FlashStringHelper* command = nullptr, unsigned long response_timeout_ms = SIM800_SERIAL_TIMEOUT_MS)
 {
-    if (expected_in_response == nullptr || !send_at_command_and_copy_response_to(stream, command, response_buffer, sizeof(response_buffer), response_delay_ms))
-    {
-        return false;
-    }
-
-    return strstr_P(response_buffer, FP(expected_in_response)) != nullptr;
-}
-
-bool send_at_command_and_expect_ok(Stream* stream, const __FlashStringHelper* command)
-{
-    return send_at_command_and_expect(stream, command, FPSTR(OK_STRING_P), 100);
+    return send_at_command_and_copy_response_to(stream, command, response_buffer, sizeof(response_buffer), response_timeout_ms) &&
+           (strstr_P(response_buffer, OK_STRING_P) != nullptr);
 }
 
 /* Static variable to track the readiness of the GSM Module */
@@ -159,7 +133,7 @@ void GSMModule::preBeginPowerOn()
     SIM800PowerManager::powerOn();
 }
 
-bool GSMModule::begin(unsigned long current_millis)
+bool GSMModule::begin(unsigned long current_millis, bool save_baud_rate)
 {
     GSMModule::ready_ = false;
     
@@ -200,27 +174,42 @@ bool GSMModule::begin(unsigned long current_millis)
         (SIM800_BAUD_RATE == 38400),
         "SIM800_BAUD_RATE must be one of: 1200, 2400, 4800, 9600, 19200, 38400");
 
-    static_assert(SIM800_RESPONSE_TIMEOUT_MS > 200, "SIM800_RESPONSE_TIMEOUT_MS must be greater than 200.");
+    static_assert(SIM800_SERIAL_TIMEOUT_MS > 200, "SIM800_SERIAL_TIMEOUT_MS must be greater than 200.");
 
     /* start listening */
     GSMModule::software_serial_->begin(SIM800_BAUD_RATE);
-    GSMModule::software_serial_->setTimeout(SIM800_RESPONSE_TIMEOUT_MS);
+    GSMModule::software_serial_->setTimeout(SIM800_SERIAL_TIMEOUT_MS);
 
     static_assert(SIM800_AUTOBAUD_ATTEMPTS > 0, "SIM800_AUTOBAUD_ATTEMPTS must be greater than 0.");
+
+    /* assume baud rate is saved, will get set to false if saving baud rate is requested and it fails */
+    bool baud_saved = true;
 
     /* start autobaud */
     for (int i = 0; i < SIM800_AUTOBAUD_ATTEMPTS; i++)
     {
-        if (send_at_command_and_expect_ok(GSMModule::software_serial_, EMPTY_FPSTR))
+        /* send at, wait for ok response */
+        if (send_at_command_and_expect_ok(GSMModule::software_serial_))
         {
+            /* send command to set baud rate and wait for ok response */
             if (send_at_command_and_expect_ok(GSMModule::software_serial_, F(CONCAT_BAUD_RATE_SET_COMMAND(SIM800_BAUD_RATE))))
             {
-                GSMModule::ready_ = true;
-                break;
+                /* if saving baud rate is enabled */
+                if (save_baud_rate)
+                {
+                    /* save baud to memory and store result */
+                    baud_saved = send_at_command_and_expect_ok(GSMModule::software_serial_, F("&W"));
+                }
+                
+                if (baud_saved) /* if baud rate was saved break the loop */
+                {
+                    GSMModule::ready_ = true;
+                    break;
+                }
             }
         }
 
-        /* sleep for 100ms */
+        /* sleep for 100ms if response is not ok */
         sleep_idle_timeout_millis(100);
     }
 
@@ -229,18 +218,95 @@ bool GSMModule::begin(unsigned long current_millis)
 
 bool GSMModule::registeredOnNetwork()
 {
+    /*
+    * Execution Command Response:
+    *   \r\n+CREG: <n>,<stat>\r\nOK\r\n
+    *   If an error occurs related to ME functionality:
+    *     +CME ERROR: <err>
+    *
+    * Parameters:
+    *   <n> (Network Registration Unsolicited Result Code Setting):
+    *     - 0  Disable network registration unsolicited result code
+    *     - 1  Enable network registration unsolicited result code
+    *          (+CREG: <stat>)
+    *     - 2  Enable network registration unsolicited result code with location information
+    *          (+CREG: <stat>[,<lac>,<ci>])
+    *
+    *   <stat> (Network Registration Status):
+    *     - 0  Not registered, MT is not currently searching for a new operator
+    *     - 1  Registered, home network
+    *     - 2  Not registered, but MT is currently searching for a new operator
+    *     - 3  Registration denied
+    *     - 4  Unknown
+    *     - 5  Registered, roaming
+    */
+
     /* if module is not ready or command failed, return false */
-    if (!GSMModule::ready_ || !send_at_command_and_copy_response_to(GSMModule::software_serial_, F("+CREG?"), response_buffer, sizeof(response_buffer), 1500))
+    if (!GSMModule::ready_ || !send_at_command_and_expect_ok(GSMModule::software_serial_, F("+CREG?"), 10000UL))
+    {
+        return false;
+    }
+    
+    /* variables to store parsed data */
+    uint8_t creg_n = 0;
+    uint8_t creg_stat = 0;
+
+    /* parse state, return false if parsing failed or its not 1 or 5 */
+    return (sscanf_P(response_buffer, RESPONSE_FMT_PARSER_CREG_CSQ_P, &creg_n, &creg_stat) == 2) 
+            && ((creg_stat == 1) || (creg_stat == 5));
+}
+
+bool GSMModule::signalQuality(uint8_t& csq_rssi, uint8_t& csq_ber)
+{
+    /*
+    * Execution Command Response:
+    *   \r\n+CSQ: <rssi>,<ber>\r\nOK\r\n
+    *   If an error occurs related to ME functionality:
+    *     +CME ERROR: <err>
+    *
+    * Parameters:
+    *   <rssi> (Received Signal Strength Indication):
+    *     - 0        : -115 dBm or less
+    *     - 1        : -111 dBm
+    *     - 2...30   : -110 to -54 dBm (linear mapping)
+    *     - 31       : -52 dBm or greater
+    *     - 99       : Not known or not detectable
+    *
+    *   <ber> (Channel Bit Error Rate, in percent):
+    *     - 0...7    : RXQUAL values as defined in GSM 05.08, subclause 7.2.4
+    *     - 99       : Not known or not detectable
+    */
+
+    /* if module is not ready or command failed, return false */
+    if (!GSMModule::ready_ || !send_at_command_and_expect_ok(GSMModule::software_serial_, F("+CSQ")))
     {
         return false;
     }
 
-    /* variable to hold parsed state */
-    uint8_t registration_state = 0;
-    
     /* parse state, return false if parsing failed or its not 1 or 5 */
-    return (sscanf_P(response_buffer, PSTR("%*[^+]+CREG: %*u,%hhu"), &registration_state) == 1) 
-            && ((registration_state == 1) || (registration_state == 5));
+    return (sscanf_P(response_buffer, RESPONSE_FMT_PARSER_CREG_CSQ_P, &csq_rssi, &csq_ber) == 2) 
+            && ((csq_rssi <= 31) || (csq_ber <= 7));
+}
+
+bool GSMModule::sendSMS(const char* number, const char* message)
+{
+    if (number == nullptr || message == nullptr || !GSMModule::ready_ || !send_at_command_and_expect_ok(GSMModule::software_serial_, F("+CMGF=1")))
+    {
+        return false;
+    }
+
+    static_assert(GSM_NUMBER_TEXT_MAX_LEN <= 16 && GSM_NUMBER_TEXT_MAX_LEN >= 10, "GSM_NUMBER_TEXT_MAX_LEN = 15 digits + '+', minimum 10");
+    size_t number_len = strnlen(number, 17);
+
+    static_assert(GSM_SMS_TEXT_MAX_LEN > 0 && GSM_SMS_TEXT_MAX_LEN <= 159, "GSM_SMS_TEXT_MAX_LEN = 159 characters for single sms");
+    size_t message_len = strnlen(message, 160);
+
+    if (number_len < 10 || number_len == 17 || message_len == 160)
+    {
+        return false;
+    }
+
+    
 }
 
 void GSMModule::end()
