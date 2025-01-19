@@ -13,8 +13,8 @@ static_assert(_SS_MAX_RX_BUFF >= 256, "SS_MAX_RX_BUFF must be at least 256.");
 #define GSM_RESPONSE_BUFFER_SIZE _SS_MAX_RX_BUFF
 #define GSM_COMMAND_MAX_LEN 550
 
-#define GSM_NUMBER_TEXT_MAX_LEN 17
-#define GSM_SMS_TEXT_MAX_LEN 160
+#define GSM_NUMBER_TEXT_MAX_LEN 16
+#define GSM_SMS_TEXT_MAX_LEN 159
 
 // VBAT goes high, wait 1.4 seconds
 // VDD goes high, wait 3 seconds, UART ready
