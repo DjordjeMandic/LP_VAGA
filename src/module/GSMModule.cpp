@@ -290,23 +290,52 @@ bool GSMModule::signalQuality(uint8_t& csq_rssi, uint8_t& csq_ber)
 
 bool GSMModule::sendSMS(const char* number, const char* message)
 {
-    if (number == nullptr || message == nullptr || !GSMModule::ready_ || !send_at_command_and_expect_ok(GSMModule::software_serial_, F("+CMGF=1")))
+    if (!GSMModule::ready_ || number == nullptr || message == nullptr || !send_at_command_and_expect_ok(GSMModule::software_serial_, F("+CMGF=1")))
     {
         return false;
     }
 
-    static_assert(GSM_NUMBER_TEXT_MAX_LEN <= 16 && GSM_NUMBER_TEXT_MAX_LEN >= 10, "GSM_NUMBER_TEXT_MAX_LEN = 15 digits + '+', minimum 10");
-    size_t number_len = strnlen(number, 17);
+    static_assert(GSM_NUMBER_TEXT_MAX_LEN <= 15 && GSM_NUMBER_TEXT_MAX_LEN >= 10, "GSM_NUMBER_TEXT_MAX_LEN = 15 digits, minimum 10");
+    size_t number_len = strnlen(number, 16);
 
     static_assert(GSM_SMS_TEXT_MAX_LEN > 0 && GSM_SMS_TEXT_MAX_LEN <= 159, "GSM_SMS_TEXT_MAX_LEN = 159 characters for single sms");
     size_t message_len = strnlen(message, 160);
 
-    if (number_len < 10 || number_len == 17 || message_len == 160)
+    if (number_len < 10 || number_len == 16 || message_len == 160)
     {
         return false;
     }
 
+    /* clear rx buffer before sending the command */
+    stream_clear_rx_buffer(GSMModule::software_serial_);
+
+    /* send the command */
+    GSMModule::software_serial_->printf(F("AT+CMGS=\"+%s\"\r\n"), number);
+
+    /* wait for response */
+    if (GSMModule::software_serial_->readBytesUntil('>', response_buffer, sizeof(response_buffer)) == 0)
+    {
+        return false;
+    }
     
+    /* prepare rx buffer for the CMGS response */
+    stream_clear_rx_buffer(GSMModule::software_serial_);
+
+    /* send message content and end it with ctrl+z (char 26) */
+    GSMModule::software_serial_->printf(F("%s%c"), message, 26);
+
+    /* set response timeout to 60s */
+    unsigned long oldStreamTimeout = GSMModule::software_serial_->getTimeout();
+    GSMModule::software_serial_->setTimeout(60000UL);
+
+    /* wait for response */
+    GSMModule::software_serial_->readBytes(response_buffer, sizeof(response_buffer));
+
+    /* restore old timeout */
+    GSMModule::software_serial_->setTimeout(oldStreamTimeout);
+// fix this because timeout will wait 60s anyawys. as soon as +CMGS: <code> OK is found, return
+    /* check if OK is received */
+    return strstr_P(response_buffer, OK_STRING_P) != nullptr;
 }
 
 void GSMModule::end()
