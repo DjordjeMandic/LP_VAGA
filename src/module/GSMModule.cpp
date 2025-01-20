@@ -43,16 +43,36 @@ bool stream_clear_rx_buffer(Stream* stream)
         return false;
     }
 
+    /* clear response_buffer */
+    memset(response_buffer, '\0', sizeof(response_buffer));
+
     /* clear serial rx buffer */
     while (stream->available() > 0)
     {
         stream->read();
     }
 
-    /* clear response_buffer */
-    memset(response_buffer, '\0', sizeof(response_buffer));
-
     return true;
+}
+
+size_t stream_wait_for_response(Stream* stream, unsigned long response_timeout_ms = SIM800_SERIAL_TIMEOUT_MS)
+{
+    /* wait for response*/
+    size_t chars_read_into_buffer = 0;
+
+    if (stream != nullptr)
+    {
+        unsigned long start = millis();
+        do
+        {
+            chars_read_into_buffer = stream->readBytes(response_buffer, sizeof(response_buffer));
+        } while ((chars_read_into_buffer == 0) && (millis() - start < response_timeout_ms));
+    }
+
+    /* null terminate buffer */
+    response_buffer[chars_read_into_buffer] = '\0';
+
+    return chars_read_into_buffer;
 }
 
 size_t clear_rx_buffer_and_send_at_command(Stream* stream, const __FlashStringHelper* command)
@@ -97,18 +117,7 @@ size_t send_at_command_and_copy_response_to(Stream* stream, const __FlashStringH
         return 0;
     }
 
-    /* wait for response*/
-    size_t chars_read_into_buffer = 0;
-    unsigned long start = millis();
-    do
-    {
-        chars_read_into_buffer = stream->readBytes(buffer, buffer_size);
-    } while ((chars_read_into_buffer == 0) && (millis() - start < response_timeout_ms));
-    
-    /* null terminate buffer */
-    buffer[chars_read_into_buffer] = '\0';
-
-    return chars_read_into_buffer;
+    return stream_wait_for_response(stream, response_timeout_ms);
 }
 
 bool send_at_command_and_expect_ok(Stream* stream, const __FlashStringHelper* command = nullptr, unsigned long response_timeout_ms = SIM800_SERIAL_TIMEOUT_MS)
@@ -324,18 +333,14 @@ bool GSMModule::sendSMS(const char* number, const char* message)
     /* send message content and end it with ctrl+z (char 26) */
     GSMModule::software_serial_->printf(F("%s%c"), message, 26);
 
-    /* set response timeout to 60s */
-    unsigned long oldStreamTimeout = GSMModule::software_serial_->getTimeout();
-    GSMModule::software_serial_->setTimeout(60000UL);
+    /* TP-Message-Reference (TP-MR) field in the GSM 03.40 */
+    uint8_t tp_mr = 0;
 
-    /* wait for response */
-    GSMModule::software_serial_->readBytes(response_buffer, sizeof(response_buffer));
+    /* wait for response up to 60 seconds */
+    stream_wait_for_response(GSMModule::software_serial_, 60000UL);
 
-    /* restore old timeout */
-    GSMModule::software_serial_->setTimeout(oldStreamTimeout);
-// fix this because timeout will wait 60s anyawys. as soon as +CMGS: <code> OK is found, return
     /* check if OK is received */
-    return strstr_P(response_buffer, OK_STRING_P) != nullptr;
+    return sscanf_P(response_buffer, PSTR("%*[^+]+CMGS: %hhu%*[^O]OK"), tp_mr) == 1;
 }
 
 void GSMModule::end()
