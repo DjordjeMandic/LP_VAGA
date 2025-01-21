@@ -64,20 +64,24 @@ static const char STARTUP_MESSAGE_P[] PROGMEM = STRING_STARTUP_MESSAGE NEW_LINE;
 
 char smsBuffer[GSM_SMS_TEXT_MAX_LEN + 1];
 
+static const char* const POWER_ON_SELF_TEST_RESULT_STRING[] = {"FAIL", "PASS"};
+
 
 typedef union {
     uint8_t u8_value; // The entire 8-bit value
     struct {
-        uint8_t bit0 : 1;
-        uint8_t bit1 : 1;
-        uint8_t bit2 : 1;
-        uint8_t bit3 : 1;
-        uint8_t bit4 : 1;
-        uint8_t bit5 : 1;
-        uint8_t bit6 : 1;
-        uint8_t bit7 : 1;
-    } bits; // Individual bits as named fields
+        uint8_t scale_status : 1;
+        uint8_t dht_status : 1;
+        uint8_t rtc_status : 1;
+        uint8_t rtc_lost_power : 1;
+        uint8_t rtc_time_valid : 1;
+        uint8_t rtc_timer_mode : 1;
+        uint8_t gsm_status : 1;
+        uint8_t post_pass : 1;
+    } fields; // Individual bits as named fields
 } power_on_self_test_result_t;
+
+power_on_self_test_result_t power_on_self_test_result = { .u8_value = 0 };
 
 void setup()
 {
@@ -153,6 +157,7 @@ void setup()
     }
     builtin_led_off();
     show_setup_result_serial_only(scale_status);
+    power_on_self_test_result.fields.scale_status = scale_status;
     float measured_10_times_avg = NAN;
     /* if scale is stabilized, test */
     if (scale_status)
@@ -209,6 +214,7 @@ void setup()
     dht_status &= isfinite(temp);
     dht_status &= isfinite(humidity);
     show_setup_result_serial_only(dht_status);
+    power_on_self_test_result.fields.dht_status = dht_status;
 
     /* test RTC */
     Serial.printf(F(STRING_RTC_INITIALIZING NEW_LINE));
@@ -273,6 +279,10 @@ void setup()
         rtc_time_valid &= date_time >= timer_mode_datetime;
     } while (false);
     show_setup_result_serial_only(rtc_time_valid);
+    power_on_self_test_result.fields.rtc_status = rtc_status;
+    power_on_self_test_result.fields.rtc_lost_power = rtc_lost_power;
+    power_on_self_test_result.fields.rtc_time_valid = rtc_time_valid;
+    power_on_self_test_result.fields.rtc_timer_mode = rtc_timer_mode_time_adjusted && timer_mode_button_pressed_on_boot;
 
     /* test GSM, if test passes, send report */
 
@@ -307,14 +317,19 @@ void setup()
         show_setup_result_serial_only(registered_on_network);
         gsm_status &= registered_on_network;
     } while (false);
+    power_on_self_test_result.fields.gsm_status = gsm_status;
+    power_on_self_test_result.fields.post_pass = power_on_self_test_result.fields.dht_status &&
+                                                 power_on_self_test_result.fields.scale_status &&
+                                                 power_on_self_test_result.fields.rtc_status &&
+                                                 power_on_self_test_result.fields.rtc_time_valid &&
+                                                 power_on_self_test_result.fields.gsm_status;
 
-    if (!gsm_status)
-    {
-        Serial.printf(FPSTR(GSM_REQUIRED_STRING_P));
-        show_setup_result_final_block(RESULT_FAILURE);
-    }
+    Serial.printf(F("Power on self test: %s\n"), POWER_ON_SELF_TEST_RESULT_STRING[static_cast<bool>(power_on_self_test_result.fields.post_pass)]);
 
-    int result = sprintf_P(smsBuffer, PSTR("%S\n1:%.3f\n2:%.3f\n3:%u\n4:%ld\n5:%.5f\n6:%.1f\n7:%.3f\n8:%.3f\n9:%lu\n%u"), 
+    /* clear sms buffer */
+    memset(smsBuffer, '\0', sizeof(smsBuffer));
+
+    int result = snprintf_P(smsBuffer, sizeof(smsBuffer), PSTR("%S\n1:%.3f\n2:%.3f\n3:%u\n4:%ld\n5:%.5f\n6:%.1f\n7:%.3f\n8:%.3f\n9:%lu\n0x%02X\n%s"), 
                                         STARTUP_MESSAGE_P, 
                                         supply_voltage, // 1
                                         float(AVCC_MIN_VOLTAGE), // 2
@@ -324,9 +339,29 @@ void setup()
                                         measured_10_times_avg, // 6
                                         temp, // 7
                                         humidity, // 8
-                                        date_time.unixtime() // 9
-                                        );
+                                        date_time.unixtime(), // 9
+                                        power_on_self_test_result.u8_value,
+                                        POWER_ON_SELF_TEST_RESULT_STRING[static_cast<bool>(power_on_self_test_result.fields.post_pass)]); // 10
+    
+    
+    Serial.printf(F("SMS:\n%s\n"), smsBuffer);
 
+    if (result >= static_cast<int>(sizeof(smsBuffer)) || result < 0)
+    {
+        /* clear sms buffer */
+        memset(smsBuffer, '\0', sizeof(smsBuffer));
+        snprintf_P(smsBuffer, sizeof(smsBuffer), PSTR("%S\nERROR OVF: %d\nPOST:%s"), STARTUP_MESSAGE_P, POWER_ON_SELF_TEST_RESULT_STRING[static_cast<bool>(power_on_self_test_result.fields.post_pass)]);
+        Serial.printf(F("ERROR-SMS:\n%s\n"), smsBuffer);
+    }
+
+    if (!gsm_status)
+    {
+        Serial.printf(FPSTR(GSM_REQUIRED_STRING_P));
+    }
+
+    Serial.printf(F(STRING_SENDING_SMS NEW_LINE));
+    bool sms_sent = GSMModule::sendSMS("385989986336", smsBuffer);
+    show_setup_result_serial_only(sms_sent);
 
     // dht_status - true if DHT passed the test
     // scale_status - true if scale passed the test

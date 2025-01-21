@@ -32,6 +32,7 @@
 #define STRING_GSM_INITIALIZING "GSM initializing"
 #define STRING_GSM_REQUIRED "GSM is required to proceed"
 #define STRING_GSM_REGISTERING_ON_NETWORK "GSM wait for network"
+#define STRING_SENDING_SMS "Sending SMS"
 
 #define STRING_REF_INVALID "Ref invalid"
 
