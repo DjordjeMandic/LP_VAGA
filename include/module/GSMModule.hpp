@@ -36,8 +36,6 @@ public:
 
     static bool registeredOnNetwork();
 
-    static bool textSMSFormat();
-
     static bool signalQuality(uint8_t& rssi, uint8_t& ber);
 
     static bool sendSMS(const char* number, const char* message);
