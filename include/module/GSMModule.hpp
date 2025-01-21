@@ -8,9 +8,14 @@
 #define gsm_return_if_not_powered_on(x) { if (!SIM800PowerManager::powered_on()) { return x; } }
 #define gsm_return_if_not_ready(x) { if (!gsm_ready()) { return x; } }
 
-static_assert(_SS_MAX_RX_BUFF >= 256, "SS_MAX_RX_BUFF must be at least 256.");
 
-#define GSM_RESPONSE_BUFFER_SIZE _SS_MAX_RX_BUFF
+/* casts to const __FlashStringHelper pointer */
+#define FPSTR(pstr_pointer) (reinterpret_cast<const __FlashStringHelper *>(pstr_pointer))
+
+/* casts to PGM_P */
+#define FP(fsh_pointer) (reinterpret_cast<PGM_P>(fsh_pointer))
+
+
 #define GSM_COMMAND_MAX_LEN 550
 
 #define GSM_NUMBER_TEXT_MAX_LEN 15

@@ -3,15 +3,10 @@
 #include <power/SIM800PowerManager.hpp>
 #include <module/GSMModule.hpp>
 #include <SoftwareSerial.h>
+#include <ResponseBuffer.hpp>
 
 #define STRINGIFY(x) #x
 #define CONCAT_BAUD_RATE_SET_COMMAND(rate) "+IPR=" STRINGIFY(rate)
-
-/* casts to const __FlashStringHelper pointer */
-#define FPSTR(pstr_pointer) (reinterpret_cast<const __FlashStringHelper *>(pstr_pointer))
-
-/* casts to PGM_P */
-#define FP(fsh_pointer) (reinterpret_cast<PGM_P>(fsh_pointer))
 
 //static const char EMPTY_STR_P[] PROGMEM = "";
 //#define EMPTY_FPSTR FPSTR(EMPTY_STR_P)
@@ -21,9 +16,6 @@ static const char OK_STRING_P[] PROGMEM = "OK";
 
 static const char RESPONSE_FMT_PARSER_CREG_CSQ_P[] PROGMEM = "%*[^+]+%*[^:]: %hhu,%hhu";
 
-static_assert(GSM_RESPONSE_BUFFER_SIZE >= _SS_MAX_RX_BUFF, "GSM_RESPONSE_BUFFER_SIZE must be at least _SS_MAX_RX_BUFF.");
-/* SIM800 response buffer */
-static char response_buffer[GSM_RESPONSE_BUFFER_SIZE];
 
 /**
  * @brief A dummy stream class for use when a stream is not available.
@@ -41,68 +33,6 @@ public:
     size_t write(uint8_t) override { return 0; }
     using Print::write;
 };
-
-/**
- * @brief Clears the RX buffer of the given stream.
- *
- * This function clears both the internal response buffer and the RX buffer of the specified stream.
- * It reads from the stream until no more data is available, effectively discarding any incoming data.
- *
- * @param stream Pointer to the Stream object whose RX buffer is to be cleared.
- * @return Returns true if the stream is valid and the buffer is cleared successfully, false otherwise.
- */
-bool stream_clear_rx_buffer(Stream* stream)
-{
-    if (stream == nullptr)
-    {
-        return false;
-    }
-
-    /* clear response_buffer */
-    memset(response_buffer, '\0', sizeof(response_buffer));
-
-    /* clear serial rx buffer */
-    while (stream->available() > 0)
-    {
-        stream->read();
-    }
-
-    return true;
-}
-
-/**
- * @brief Reads from the specified Stream until a response is available or a timeout occurs.
- *
- * This function reads from the specified stream until a response is available or a timeout occurs.
- * If the stream is null, the function returns immediately with a chars_read_into_buffer of 0.
- * If the stream is valid, the function reads until a response is available or the timeout specified
- * by `response_timeout_ms` is reached. The response is stored in the `response_buffer` global variable.
- * The number of characters read into the buffer is returned.
- *
- * @param stream Pointer to the Stream object to read from.
- * @param response_timeout_ms The timeout in milliseconds to wait for a response.
- * @return The number of characters read into the `response_buffer` global variable.
- */
-size_t stream_wait_for_response(Stream* stream, unsigned long response_timeout_ms = SIM800_SERIAL_TIMEOUT_MS)
-{
-    /* wait for response*/
-    size_t chars_read_into_buffer = 0;
-
-    /* if stream is not null read from it */
-    if (stream != nullptr)
-    {
-        unsigned long start = millis();
-        do
-        {
-            chars_read_into_buffer = stream->readBytes(response_buffer, sizeof(response_buffer));
-        } while ((chars_read_into_buffer == 0) && (millis() - start < response_timeout_ms));
-    }
-
-    /* null terminate buffer since readBytes does not */
-    response_buffer[chars_read_into_buffer] = '\0';
-
-    return chars_read_into_buffer;
-}
 
 /**
  * @brief Clears the RX buffer of the given stream and sends an AT command with an optional
@@ -130,7 +60,7 @@ size_t clear_rx_buffer_and_send_at_command(Stream* stream, const __FlashStringHe
     /* count of sent bytes */
     size_t sent = 0;
     /* send AT */
-    sent += stream->print(F("AT"));
+    sent += stream->printf(F("AT"));
 
     /* if command is not null send it */
     if (command != nullptr)
@@ -145,12 +75,12 @@ size_t clear_rx_buffer_and_send_at_command(Stream* stream, const __FlashStringHe
         if (cmd_len > 0 && cmd_len < GSM_COMMAND_MAX_LEN)
         {
             /* send command only if it is not empty and not too long */
-            sent += stream->print(command);
+            sent += stream->printf(F("%S"), FP(command));
         }
     }
     
     /* send "\r\n" */
-    sent += stream->println();
+    sent += stream->printf(F("\r\n"));
 
     /* return number of bytes sent */
     return sent;

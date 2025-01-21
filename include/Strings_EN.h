@@ -29,6 +29,10 @@
 
 #define STRING_RTC_INITIALIZING "RTC initializing"
 
+#define STRING_GSM_INITIALIZING "GSM initializing"
+#define STRING_GSM_REQUIRED "GSM is required to proceed"
+#define STRING_GSM_REGISTERING_ON_NETWORK "GSM wait for network"
+
 #define STRING_REF_INVALID "Ref invalid"
 
 #define STRING_MEASURE_VOLTAGE_ON_AREF_PIN "Measure voltage on AREF pin"

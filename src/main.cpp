@@ -17,7 +17,7 @@
 #include <DHT.h>
 #include <Strings_EN.h>
 #include <module/GSMModule.hpp>
-
+#include <ResponseBuffer.hpp>
 
 #define BUTTON_PIN_MODE(BUTTON_ACTIVE_STATE) (BUTTON_ACTIVE_STATE == LOW ? INPUT_PULLUP : INPUT)
 #define BUTTON_PRESSED(BUTTON_PIN, BUTTON_ACTIVE_STATE) (digitalRead(BUTTON_PIN) == BUTTON_ACTIVE_STATE)
@@ -51,18 +51,33 @@ const DateTime timer_mode_datetime = DateTime(2025, 1, 1, 0, 0, 0);
 bool setup_calibrate_internal_reference();
 bool setup_calibrate_scale_factor();
 
-/* sms buffer, maximum length is 160 chars */
-char sms_buffer[161] = {0};
-
-/* use with snpringf_P */
-const char flashString[] PROGMEM = "";
-
 uint16_t internal_reference = DataEEPROM::getInternalAdcReference();
 float scale_factor = DataEEPROM::getScaleCalibrationValue();
 long scale_tare_offset = DataEEPROM::getScaleTareOffset();
 
-
 float calculate_supply_voltage(uint16_t adc_value, uint16_t reference_voltage = internal_reference);
+
+#define NEW_LINE "\n"
+
+static const char GSM_REQUIRED_STRING_P[] PROGMEM = STRING_GSM_REQUIRED NEW_LINE;
+static const char STARTUP_MESSAGE_P[] PROGMEM = STRING_STARTUP_MESSAGE NEW_LINE;
+
+char smsBuffer[GSM_SMS_TEXT_MAX_LEN + 1];
+
+
+typedef union {
+    uint8_t u8_value; // The entire 8-bit value
+    struct {
+        uint8_t bit0 : 1;
+        uint8_t bit1 : 1;
+        uint8_t bit2 : 1;
+        uint8_t bit3 : 1;
+        uint8_t bit4 : 1;
+        uint8_t bit5 : 1;
+        uint8_t bit6 : 1;
+        uint8_t bit7 : 1;
+    } bits; // Individual bits as named fields
+} power_on_self_test_result_t;
 
 void setup()
 {
@@ -79,7 +94,7 @@ void setup()
 
     /* set baud rate in Config.hpp */
     serial_begin();
-    Serial.println(F(STRING_STARTUP_MESSAGE));
+    Serial.printf(FPSTR(STARTUP_MESSAGE_P));
 
     /* read buttons */
     bool calibrate_button_pressed = BUTTON_PRESSED(BUTTON_CALIBRATE_PIN, BUTTON_CALIBRATE_PIN_ACTIVE_STATE);
@@ -91,7 +106,7 @@ void setup()
     /* if multiple buttons are pressed, block */
     if (button_pressed_count > 1)
     {
-        Serial.println(F(STRING_MULTIPLE_BUTTONS_PRESSED));
+        Serial.printf(F(STRING_MULTIPLE_BUTTONS_PRESSED NEW_LINE));
         show_setup_result_final_block(RESULT_FAILURE);
     }
 
@@ -105,20 +120,14 @@ void setup()
     /* check internal reference */
     if (internal_reference < 1000 || internal_reference > 1200)
     {
-        Serial.println(F(STRING_REF_INVALID));
+        Serial.printf(F(STRING_REF_INVALID " %u" NEW_LINE), internal_reference);
         show_setup_result_final_block(RESULT_FAILURE);
     }
     /* check min avcc voltage constant */
     static_assert(float(AVCC_MIN_VOLTAGE) >= 3.5f, "AVCC_MIN_VOLTAGE must be above 3.5V for modules to work");
     static_assert(float(AVCC_MIN_VOLTAGE) < 4.2f, "AVCC_MIN_VOLTAGE must be below 4.2V");
     float supply_voltage = get_supply_voltage(); /* read supply voltage */
-    Serial.print(F("AVCC: "));
-    Serial.print(supply_voltage, 3);
-    Serial.print(F(" V ; MIN: "));
-    Serial.print(AVCC_MIN_VOLTAGE, 3);
-    Serial.print(F(" V, REF: "));
-    Serial.print(internal_reference, 3);
-    Serial.println(F(" mV"));
+    Serial.printf(F("AVCC:%.3fV MIN:%.3fV REF:%umV\n"), supply_voltage, float(AVCC_MIN_VOLTAGE), internal_reference);
     /* check avcc voltage, power down if too low for modules to work */
     if (supply_voltage < AVCC_MIN_VOLTAGE)
     {
@@ -127,38 +136,35 @@ void setup()
     }
 
     /* test hx711 */
-    Serial.println(F(STRING_SCALE_INITIALIZING));
+    Serial.printf(F(STRING_SCALE_INITIALIZING NEW_LINE));
     ScaleModule::begin(); /* power on scale and init library */
     /* apply scale parameters */
     ScaleModule::setOffset(scale_tare_offset);
     ScaleModule::setScale(scale_factor);
-    Serial.print(F(STRING_TARE_OFFSET_SC_SPACE));
-    Serial.println(scale_tare_offset);
-    Serial.print(F(STRING_SCALE_FACTOR_SC_SPACE));
-    Serial.println(scale_factor, 5);
+    Serial.printf(F(STRING_TARE_OFFSET_SC_SPACE "%ld" NEW_LINE STRING_SCALE_FACTOR_SC_SPACE "%.5f" NEW_LINE), scale_tare_offset, scale_factor);
     bool scale_status = true;
     builtin_led_on(); /* indicate start of procedure */
     scale_status &= ScaleModule::waitReadyTimeout(); /* wait for scale to be ready */
     /* perform scale stabilization only if scale is ready */
     if (scale_status)
     {
-        Serial.println(F(STRING_SCALE_STABILIZING));
+        Serial.printf(F(STRING_SCALE_STABILIZING NEW_LINE));
         scale_status &= ScaleModule::stabilize(); /* stabilize scale using dummy readings */
     }
     builtin_led_off();
     show_setup_result_serial_only(scale_status);
+    float measured_10_times_avg = NAN;
     /* if scale is stabilized, test */
     if (scale_status)
     {
         /* Measure average 10x */
-        Serial.print(F(STRING_MEASURED_MASS_SC_SPACE));
-        Serial.print(ScaleModule::getUnits(10), 3);
-        Serial.println(F(STRING_SPACE_KG));
+        measured_10_times_avg = ScaleModule::getUnits(10);
+        Serial.printf(F(STRING_MEASURED_MASS_SC_SPACE "%.3f" STRING_SPACE_KG NEW_LINE), measured_10_times_avg);
 
         /* calibrate or tare scale if requested */
         if (calibrate_button_pressed || tare_button_pressed)
         {
-            Serial.println(F(STRING_SCALE_TARING));
+            Serial.printf(F(STRING_SCALE_TARING NEW_LINE));
             scale_status &= ScaleModule::tare(); /* tare operation is required anyways for calibration */
             /* if failed to tare scale, block */
             if (!scale_status)
@@ -167,8 +173,7 @@ void setup()
             }
             scale_tare_offset = ScaleModule::getOffset(); /* get new tare offset */
             DataEEPROM::setScaleTareOffset(scale_tare_offset); /* store to EEPROM */
-            Serial.print(F(STRING_SAVED_TARE_OFFSET_SC_SPACE));
-            Serial.println(scale_tare_offset);
+            Serial.printf(F(STRING_SAVED_TARE_OFFSET_SC_SPACE "%ld" NEW_LINE), scale_tare_offset);
 
             /* only tare operation requested */
             if (tare_button_pressed)
@@ -185,13 +190,13 @@ void setup()
             }
 
             /* operation unknown */
-            Serial.println(F(STRING_UNKNOWN_COMMAND));
+            Serial.printf(F(STRING_UNKNOWN_COMMAND NEW_LINE));
             show_setup_result_final_block(RESULT_FAILURE);
         }
     }
 
     /* test DHT */
-    Serial.println(F(STRING_DHT_INITIALIZING));
+    Serial.printf(F(STRING_DHT_INITIALIZING NEW_LINE));
     DHTModule::begin(); /* initialize DHT sensor */
     builtin_led_on(); /* indicate start of procedure */
     sleep_until(SLEEP_MODE_IDLE, DHT22PowerManager::poweredOn()); /* wait for DHT sensor to power up */
@@ -199,18 +204,14 @@ void setup()
     bool dht_status = DHTModule::ready(); /* check if DHT sensor is ready */
     float temp = DHTModule::readTemperature();
     float humidity = DHTModule::readHumidity();
-    Serial.print(F("Temperature: "));
-    Serial.print(temp, 1);
-    Serial.print(F(" C ; Humidity: "));
-    Serial.print(humidity, 1);
-    Serial.println(F(" %"));
+    Serial.printf(F("Temp: %.1fC ; Humidity: %.1f%" NEW_LINE), temp, humidity);
     /* check if temperature and humidity are finite */
     dht_status &= isfinite(temp);
     dht_status &= isfinite(humidity);
     show_setup_result_serial_only(dht_status);
 
     /* test RTC */
-    Serial.println(F(STRING_RTC_INITIALIZING));
+    Serial.printf(F(STRING_RTC_INITIALIZING NEW_LINE));
     RTCModule::preBeginPowerOn(); /* power on rtc */
     builtin_led_on(); /* indicate start of procedure */
     bool rtc_status = false; /* assume rtc is not ready */
@@ -234,14 +235,13 @@ void setup()
         rtc_lost_power = RTCModule::lostPower();
         if (rtc_lost_power)
         {
-            Serial.println(F(STRING_RTC_LOST_POWER));
+            Serial.printf(F(STRING_RTC_LOST_POWER NEW_LINE));
             if (!timer_mode_button_pressed_on_boot)
             {
-                Serial.println(F(STRING_SET_CLOCK_OR_USE_TIMER_MODE));
+                Serial.printf(F(STRING_SET_CLOCK_OR_USE_TIMER_MODE NEW_LINE));
                 break; /* time is not valid and timer mode is not enabled */
-
             }
-            Serial.println(F(STRING_TIMER_ENABLED_SETTING_TIME));
+            Serial.printf(F(STRING_TIMER_ENABLED_SETTING_TIME NEW_LINE));
             rtc_timer_mode_time_adjusted = RTCModule::adjust(timer_mode_datetime);
             if (!rtc_timer_mode_time_adjusted)
             {
@@ -249,32 +249,83 @@ void setup()
             }
         }
 
-        Serial.println(F(STRING_READ_RTC_TIME));
+        Serial.printf(F(STRING_READ_RTC_TIME NEW_LINE));
         date_time = RTCModule::now(); /* read time from rtc */
         rtc_time_valid = date_time.isValid(); /* check if rtc time is valid */
-        /* if rtc time is valid print it */
-        if (rtc_time_valid)
-        {
-            /* print time */
-            Serial.printf(
-                F(STRING_RTC_TIME_SC_SPACE "%02u/%02u/%04u %02u:%02u:%02u\n"),
-                date_time.day(),     // DD
-                date_time.month(),   // MM
-                date_time.year(),    // YYYY
-                date_time.hour(),    // HH
-                date_time.minute(),  // MM
-                date_time.second()   // SS
-            );
-        }
-        rtc_time_valid &= date_time >= timer_mode_datetime; /* check if rtc time is greater than or equal to timer mode time */
         if (!rtc_time_valid)
         {
-            Serial.println(F(STRING_RTC_TIME_INVALID));
+            Serial.printf(F(STRING_RTC_TIME_INVALID NEW_LINE));
+            break;
         }
+
+        /* if rtc time is valid print it */
+        Serial.printf(
+            F(STRING_RTC_TIME_SC_SPACE "%02u/%02u/%04u %02u:%02u:%02u\n"),
+            date_time.day(),     // DD
+            date_time.month(),   // MM
+            date_time.year(),    // YYYY
+            date_time.hour(),    // HH
+            date_time.minute(),  // MM
+            date_time.second()   // SS
+        );
+
+        /* check if rtc time is greater than or equal to timer mode time */
+        rtc_time_valid &= date_time >= timer_mode_datetime;
     } while (false);
     show_setup_result_serial_only(rtc_time_valid);
 
     /* test GSM, if test passes, send report */
+
+    Serial.printf(F(STRING_GSM_INITIALIZING NEW_LINE));
+    GSMModule::preBeginPowerOn(); /* power on SIM800 */
+    bool gsm_status = GSMModule::begin(); /* initialize GSM module */
+    show_setup_result_serial_only(gsm_status);
+
+    do
+    {
+        /* check if module is ready */
+        if (!gsm_status)
+        {
+            break;
+        }
+
+        /* wait for module to register on network */
+        Serial.printf(F(STRING_GSM_REGISTERING_ON_NETWORK NEW_LINE));
+        unsigned long gsm_start_millis = millis();
+        bool registered_on_network = false;
+        do
+        {
+            /* check if module is registered on network */
+            registered_on_network = GSMModule::registeredOnNetwork();
+            /* if not registered on network, sleep for 2 seconds */
+            if (!registered_on_network)
+            {
+                sleep_idle_timeout_millis(2000);
+            }
+            /* wait for 60 seconds or until registered on network */
+        } while (!registered_on_network && millis() - gsm_start_millis < 60000UL);
+        show_setup_result_serial_only(registered_on_network);
+        gsm_status &= registered_on_network;
+    } while (false);
+
+    if (!gsm_status)
+    {
+        Serial.printf(FPSTR(GSM_REQUIRED_STRING_P));
+        show_setup_result_final_block(RESULT_FAILURE);
+    }
+
+    int result = sprintf_P(smsBuffer, PSTR("%S\n1:%.3f\n2:%.3f\n3:%u\n4:%ld\n5:%.5f\n6:%.1f\n7:%.3f\n8:%.3f\n9:%lu\n%u"), 
+                                        STARTUP_MESSAGE_P, 
+                                        supply_voltage, // 1
+                                        float(AVCC_MIN_VOLTAGE), // 2
+                                        internal_reference, // 3
+                                        scale_tare_offset, // 4
+                                        scale_factor, // 5
+                                        measured_10_times_avg, // 6
+                                        temp, // 7
+                                        humidity, // 8
+                                        date_time.unixtime() // 9
+                                        );
 
 
     // dht_status - true if DHT passed the test
@@ -324,15 +375,14 @@ void show_setup_result_serial_only(bool success)
 {
     if (serial_is_enabled())
     {
-        Serial.print(F(STRING_OPERATION_RESULT_SC_SPACE));
-        Serial.println(success ? F(STRING_OK) : F(STRING_FAIL));
+        Serial.printf(F(STRING_OPERATION_RESULT_SC_SPACE "%S" NEW_LINE), success ? PSTR(STRING_OK) : PSTR(STRING_FAIL));
     }
 }
 
 void show_setup_result_final_block(bool success)
 {
     show_setup_result_serial_only(success);
-    serial_println(F(STRING_HALTED));
+    serial_printf(F(STRING_HALTED NEW_LINE));
 
     power_all_off();
 
@@ -398,71 +448,44 @@ bool setup_calibrate_internal_reference()
     /* initialize adc for internal reference calibration */
     ADCHelper::refBGInit();
 
-    Serial.println(F(STRING_MEASURE_VOLTAGE_ON_AREF_PIN));
+    Serial.printf(F(STRING_MEASURE_VOLTAGE_ON_AREF_PIN NEW_LINE));
 
-    String input = "";
-    bool inputComplete = false;
-    unsigned long startTime = millis();
-
+    uint16_t input_mv = 0;
     /* wait for user to input the voltage */
     do
     {
-        while (Serial.available() > 0)
-        {
-            char c = Serial.read();
-            if (c == '\n') 
-            {
-                input.trim();
-                inputComplete = true;
-
-                /* flush rest of the buffer */
-                while (Serial.available() > 0) 
-                {
-                    Serial.read();
-                }
-                break;       
-            }
-            input += c;
-        }
-
+        stream_clear_rx_buffer(&Serial);
+        
         /* heartbeat led and serial prompt */
-        if (millis() - startTime >= 3000)
+        Serial.printf(F(STRING_ENTER_AREF_IN_MV NEW_LINE));
+        builtin_led_on();
+        sleep_idle_timeout_millis(100);
+        builtin_led_off();
+
+        size_t rx_count = stream_wait_for_response(&Serial, 5000UL);
+
+        /* digits + newline */
+        if (rx_count > 1 && sscanf_P(response_buffer, PSTR("%hu\n"), &input_mv) != 1)
         {
-            Serial.println(F(STRING_ENTER_AREF_IN_MV));
-            startTime = millis();
-
-            builtin_led_on();
-            sleep_idle_timeout_millis(100);
-            builtin_led_off();
+            input_mv = 0;
         }
-    } while (!inputComplete);
 
-    /* convert input to long */
-    long inputLong = input.toInt();
+        Serial.printf(F("input_mv: %u, RX %zu bytes: %s" NEW_LINE), input_mv, rx_count, response_buffer);
+    } while (input_mv > 1200 || input_mv < 1000);
 
-    Serial.print(F(STRING_INPUT_SC_SAPCE));
-    Serial.println(inputLong);
+    Serial.printf(F(STRING_INPUT_SC_SAPCE "%u" NEW_LINE), input_mv);
 
-    /* set internal reference if within range */
-    if ((inputLong > 1000 || inputLong < 1200))
-    {
-        /* save to EEPROM */
-        internal_reference = static_cast<uint16_t>(inputLong);
-        DataEEPROM::setInternalAdcReference(internal_reference);
+    /* save to EEPROM */
+    internal_reference = input_mv;
+    DataEEPROM::setInternalAdcReference(internal_reference);
 
-        Serial.print(F(STRING_SAVED_SC_SAPCE));
-        Serial.println(inputLong);
+    Serial.printf(F(STRING_SAVED_SC_SAPCE "%u" NEW_LINE), internal_reference);
 
-        /* redo measurement */
-        Serial.print(F(STRING_SUPPLY_VOLTAGE_SC_SPACE));
-        Serial.print(get_supply_voltage(), 3);
-        Serial.println(F(STRING_SPACE_V));
+    /* redo measurement */
+    float voltage = get_supply_voltage();
+    Serial.printf(F(STRING_SUPPLY_VOLTAGE_SC_SPACE "%.3f" STRING_SPACE_V NEW_LINE), voltage);
 
-        return RESULT_SUCCESS;
-    }
-
-    /* input is invalid */
-    return RESULT_FAILURE;
+    return internal_reference == DataEEPROM::getInternalAdcReference() ? RESULT_SUCCESS : RESULT_FAILURE;
 }
 
 bool setup_calibrate_scale_factor()
@@ -473,16 +496,14 @@ bool setup_calibrate_scale_factor()
 
     if (!isfinite(known_mass_kg))
     {
-        Serial.println(F(STRING_KNOWN_MASS_NOT_FINITE));
+        Serial.printf(F(STRING_KNOWN_MASS_NOT_FINITE NEW_LINE));
         return RESULT_FAILURE;
     }
 
     /* wait for user to place known weight and press calibrate button */
     do
     {
-        Serial.print(F(STRING_PLACE_SPACE));
-        Serial.print(known_mass_kg, 0);
-        Serial.println(F(STRING_SPACE_KG_ON_SCALE_AND_PRESS_TARE));
+        Serial.printf(F(STRING_PLACE_SPACE "%.1f" STRING_SPACE_KG_ON_SCALE_AND_PRESS_TARE NEW_LINE), known_mass_kg);
 
         builtin_led_on();
         sleep_power_down_185ms_adc_off_bod_on();
@@ -498,15 +519,14 @@ bool setup_calibrate_scale_factor()
 
     if (!isfinite(scale_factor) || scale_factor == 0.0f)
     {
-        Serial.println(F(STRING_NEW_SCALE_FACTOR_INVALID));
+        Serial.printf(F(STRING_NEW_SCALE_FACTOR_INVALID NEW_LINE));
         return RESULT_FAILURE;
     }
 
     /* save new scale factor to EEPROM */
     DataEEPROM::setScaleCalibrationValue(scale_factor);
 
-    Serial.print(F(STRING_SAVED_FACTOR_SC_SPACE));
-    Serial.println(scale_factor);
+    Serial.printf(F(STRING_SAVED_FACTOR_SC_SPACE " %.5f" NEW_LINE), scale_factor);
 
-    return RESULT_SUCCESS;
+    return scale_factor == DataEEPROM::getScaleCalibrationValue() ? RESULT_SUCCESS : RESULT_FAILURE;
 }
