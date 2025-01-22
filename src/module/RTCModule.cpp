@@ -53,7 +53,8 @@ bool RTCModule::begin(unsigned long current_millis)
         RTCModule::rtc_.writeSqwPinMode(DS3231_OFF);
     }
 
-    return RTCModule::rtclibBeginResult_;
+    RTCModule::ready_ = RTCModule::rtclibBeginResult_;
+    return RTCModule::ready_;
 }
 
 bool RTCModule::ready(unsigned long current_millis)

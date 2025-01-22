@@ -46,7 +46,7 @@ float get_supply_voltage(uint8_t samples = ADC_AVCC_SAMPLES_DEFAULT);
 
 bool timer_mode_button_pressed_on_boot = false;
 
-const DateTime timer_mode_datetime = DateTime(2025, 1, 1, 0, 0, 0);
+const DateTime timer_mode_datetime = DateTime(2025, 1, 1);
 
 bool setup_calibrate_internal_reference();
 bool setup_calibrate_scale_factor();
