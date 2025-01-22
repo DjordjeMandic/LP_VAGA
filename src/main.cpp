@@ -107,6 +107,7 @@ void setup()
     bool tare_button_pressed      = BUTTON_PRESSED(BUTTON_TARE_PIN, BUTTON_TARE_PIN_ACTIVE_STATE);
     bool internal_reference_set_button_pressed = BUTTON_PRESSED(BUTTON_INTERNAL_REFERENCE_SET_PIN, BUTTON_INTERNAL_REFERENCE_SET_PIN_ACTIVE_STATE);
     timer_mode_button_pressed_on_boot = BUTTON_PRESSED(BUTTON_TIMER_MODE_PIN, BUTTON_TIMER_MODE_PIN_ACTIVE_STATE);
+    serial_printf(F("A0:%u\nA1:%u\nA2:%u\nA3:%u\n" NEW_LINE), calibrate_button_pressed, tare_button_pressed, timer_mode_button_pressed_on_boot, internal_reference_set_button_pressed);
     /* count number of pressed buttons */
     uint8_t button_pressed_count = calibrate_button_pressed + tare_button_pressed + internal_reference_set_button_pressed + timer_mode_button_pressed_on_boot;
     /* enable sms config mode only if calibrate and tare are pressed */
