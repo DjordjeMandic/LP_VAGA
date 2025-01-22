@@ -336,6 +336,8 @@ void setup()
 
     Serial.printf(F("Power on self test: %s\n"), POWER_ON_SELF_TEST_RESULT_STRING[static_cast<bool>(power_on_self_test_result.fields.post_pass)]);
 
+    date_time = RTCModule::now();
+
     int result = snprintf_P(smsBuffer, sizeof(smsBuffer), PSTR("%S\n1:%.3f\n2:%.3f\n3:%u\n4:%ld\n5:%.2f\n6:%.1f\n7:%.1f\n8:%.1f\n9:%02u/%02u/%04u-%02u:%02u:%02u\n\n0x%02X %s"), 
                                         STARTUP_MESSAGE_P, 
                                         supply_voltage, // 1
@@ -378,7 +380,9 @@ void setup()
                                                                 "AREF:1000...1200" NEW_LINE
                                                                 "RTC:DD/MM/YY-HH:MM" NEW_LINE
                                                                 "SMS:HH"));
-        send_status = send_sms("385989986336", smsBuffer);
+                                                                
+        send_status = GSMModule::sendSMS("385989986336", smsBuffer);
+        show_setup_result_serial_only(send_status);
 
         if (!send_status)
         {
