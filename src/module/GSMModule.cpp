@@ -270,7 +270,7 @@ bool GSMModule::registeredOnNetwork()
     /* variables to store parsed data */
     uint8_t creg_n;
     uint8_t creg_stat = 0;
-
+    serial_printf(F("CREG resp: %s"), response_buffer);
     /* parse state, return false if parsing failed or its not 1 or 5 */
     return (sscanf_P(response_buffer, RESPONSE_FMT_PARSER_CREG_CSQ_P, &creg_n, &creg_stat) == 2) 
             && ((creg_stat == 1) || (creg_stat == 5));
