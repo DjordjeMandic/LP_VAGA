@@ -360,6 +360,8 @@ bool GSMModule::sendSMS(const char* number, const char* message)
     /* wait for response to prompting to enter sms content */
     if (GSMModule::software_serial_->readBytesUntil('>', response_buffer, sizeof(response_buffer)) == 0)
     {
+        response_buffer[sizeof(response_buffer) - 1] = 0;
+        serial_printf(F("No response: %s"), response_buffer);
         return false;
     }
     
@@ -367,14 +369,15 @@ bool GSMModule::sendSMS(const char* number, const char* message)
     stream_clear_rx_buffer(GSMModule::software_serial_);
 
     /* send message content and end it with ctrl+z (char 26) */
-    GSMModule::software_serial_->printf(F("%s%c"), message, 26);
+    GSMModule::software_serial_->printf(F("%s"), message);
+    GSMModule::software_serial_->write((char)26);
 
     /* wait for response up to 60 seconds */
     stream_wait_for_response(GSMModule::software_serial_, 60000UL);
 
     /* TP-Message-Reference (TP-MR) field in the GSM 03.40 */
     uint8_t tp_mr = 0;
-
+    serial_printf(F("response_buffer: %s"), response_buffer);
     /* check if OK is received */
     return sscanf_P(response_buffer, PSTR("%*[^+]+CMGS: %hhu%*[^O]OK"), tp_mr) == 1;
 }
