@@ -83,6 +83,8 @@ typedef union {
 
 power_on_self_test_result_t power_on_self_test_result = { .u8_value = 0 };
 
+bool send_sms(const char* number, const char* message);
+bool check_sms_buffer_ovf(int snprintf_result);
 void setup()
 {
     power_all_off();
@@ -107,11 +109,17 @@ void setup()
     timer_mode_button_pressed_on_boot = BUTTON_PRESSED(BUTTON_TIMER_MODE_PIN, BUTTON_TIMER_MODE_PIN_ACTIVE_STATE);
     /* count number of pressed buttons */
     uint8_t button_pressed_count = calibrate_button_pressed + tare_button_pressed + internal_reference_set_button_pressed + timer_mode_button_pressed_on_boot;
+    /* enable sms config mode only if calibrate and tare are pressed */
+    bool sms_config_mode = calibrate_button_pressed && tare_button_pressed && (button_pressed_count == 2);
     /* if multiple buttons are pressed, block */
     if (button_pressed_count > 1)
     {
-        Serial.printf(F(STRING_MULTIPLE_BUTTONS_PRESSED NEW_LINE));
-        show_setup_result_final_block(RESULT_FAILURE);
+        /* if not in sms config mode */
+        if (!sms_config_mode)
+        {
+            Serial.printf(F(STRING_MULTIPLE_BUTTONS_PRESSED NEW_LINE));
+            show_setup_result_final_block(RESULT_FAILURE);
+        }
     }
 
     /* calibrate internal adc reference if requested */
@@ -167,7 +175,7 @@ void setup()
         Serial.printf(F(STRING_MEASURED_MASS_SC_SPACE "%.3f" STRING_SPACE_KG NEW_LINE), measured_10_times_avg);
 
         /* calibrate or tare scale if requested */
-        if (calibrate_button_pressed || tare_button_pressed)
+        if (!sms_config_mode && (calibrate_button_pressed || tare_button_pressed))
         {
             Serial.printf(F(STRING_SCALE_TARING NEW_LINE));
             scale_status &= ScaleModule::tare(); /* tare operation is required anyways for calibration */
@@ -326,9 +334,6 @@ void setup()
 
     Serial.printf(F("Power on self test: %s\n"), POWER_ON_SELF_TEST_RESULT_STRING[static_cast<bool>(power_on_self_test_result.fields.post_pass)]);
 
-    /* clear sms buffer */
-    memset(smsBuffer, '\0', sizeof(smsBuffer));
-
     int result = snprintf_P(smsBuffer, sizeof(smsBuffer), PSTR("%S\n1:%.3f\n2:%.3f\n3:%u\n4:%ld\n5:%.5f\n6:%.1f\n7:%.3f\n8:%.3f\n9:%lu\n0x%02X\n%s"), 
                                         STARTUP_MESSAGE_P, 
                                         supply_voltage, // 1
@@ -346,22 +351,34 @@ void setup()
     
     Serial.printf(F("SMS:\n%s\n"), smsBuffer);
 
-    if (result >= static_cast<int>(sizeof(smsBuffer)) || result < 0)
-    {
-        /* clear sms buffer */
-        memset(smsBuffer, '\0', sizeof(smsBuffer));
-        snprintf_P(smsBuffer, sizeof(smsBuffer), PSTR("%S\nERROR OVF: %d\nPOST:%s"), STARTUP_MESSAGE_P, POWER_ON_SELF_TEST_RESULT_STRING[static_cast<bool>(power_on_self_test_result.fields.post_pass)]);
-        Serial.printf(F("ERROR-SMS:\n%s\n"), smsBuffer);
-    }
+    check_sms_buffer_ovf(result);
 
     if (!gsm_status)
     {
         Serial.printf(FPSTR(GSM_REQUIRED_STRING_P));
+        show_setup_result_final_block(RESULT_FAILURE);
     }
 
-    Serial.printf(F(STRING_SENDING_SMS NEW_LINE));
-    bool sms_sent = GSMModule::sendSMS("385989986336", smsBuffer);
-    show_setup_result_serial_only(sms_sent);
+    bool send_status = send_sms("385989986336", smsBuffer);
+    show_setup_result_serial_only(send_status);
+
+    /* sms sending failed, block */
+    if (!send_status)
+    {
+        show_setup_result_final_block(RESULT_FAILURE);
+    }
+
+    /* if entered, must be reset manually by pressing reset button */
+    if (sms_config_mode)
+    {
+        result = snprintf_P(smsBuffer, sizeof(smsBuffer), PSTR("Config:" NEW_LINE 
+                                                               "AREF:1000...1200" NEW_LINE
+                                                               "RTC:DD-MM-YY-HH-MM-SS" NEW_LINE
+                                                               ));
+
+        /* sms config mode must always loop until manually reset */
+        show_setup_result_final_block(RESULT_FAILURE);
+    }
 
     // dht_status - true if DHT passed the test
     // scale_status - true if scale passed the test
@@ -378,6 +395,17 @@ void setup()
 void loop()
 {
     /* loop is only for low power optimized operation */
+}
+
+bool check_sms_buffer_ovf(int snprintf_result)
+{
+    if (snprintf_result >= static_cast<int>(sizeof(smsBuffer)) || snprintf_result < 0)
+    {
+        snprintf_P(smsBuffer, sizeof(smsBuffer), PSTR("%S\nERROR-OVF:%d\nPOST:%s"), STARTUP_MESSAGE_P, POWER_ON_SELF_TEST_RESULT_STRING[static_cast<bool>(power_on_self_test_result.fields.post_pass)]);
+        serial_printf(F("SMS-OVF:\n%s\n"), smsBuffer);
+        return true;
+    }
+    return false;
 }
 
 void power_all_off()
@@ -404,6 +432,12 @@ void power_all_off()
     /* disable builtin led */
     pinMode(LED_BUILTIN, OUTPUT);
     builtin_led_off();
+}
+
+bool send_sms(const char* number, const char* message)
+{
+    serial_printf(F(STRING_SENDING_SMS NEW_LINE));
+    return GSMModule::sendSMS(number, message);
 }
 
 void show_setup_result_serial_only(bool success)
