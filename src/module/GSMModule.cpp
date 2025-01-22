@@ -372,7 +372,7 @@ bool GSMModule::sendSMS(const char* number, const char* message)
     stream_wait_for_response(GSMModule::software_serial_, 60000UL);
 
     /* TP-Message-Reference (TP-MR) field in the GSM 03.40 */
-    uint8_t tp_mr;
+    uint8_t tp_mr = 0;
 
     /* check if OK is received */
     return sscanf_P(response_buffer, PSTR("%*[^+]+CMGS: %hhu%*[^O]OK"), tp_mr) == 1;
