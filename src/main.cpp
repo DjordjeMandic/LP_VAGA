@@ -217,7 +217,7 @@ void setup()
     bool dht_status = DHTModule::ready(); /* check if DHT sensor is ready */
     float temp = DHTModule::readTemperature();
     float humidity = DHTModule::readHumidity();
-    Serial.printf(F("Temp: %.1fC ; Humidity: %.1f%" NEW_LINE), temp, humidity);
+    Serial.printf(F("Temp: %.1fC ; Humidity: %.1f" NEW_LINE), temp, humidity);
     /* check if temperature and humidity are finite */
     dht_status &= isfinite(temp);
     dht_status &= isfinite(humidity);
