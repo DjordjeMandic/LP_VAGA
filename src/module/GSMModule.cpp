@@ -212,9 +212,10 @@ bool GSMModule::begin(unsigned long current_millis, bool save_baud_rate)
                     /* save baud to memory and store result */
                     baud_saved = send_at_command_and_expect_ok(GSMModule::software_serial_, F("&W"));
                 }
-                
-                if (baud_saved) /* if baud rate was saved break the loop */
+                bool echo_off = send_at_command_and_expect_ok(GSMModule::software_serial_, F("E0"));
+                if (echo_off && baud_saved) /* if baud rate was saved break the loop */
                 {
+
                     GSMModule::ready_ = true;
                     break;
                 }
