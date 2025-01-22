@@ -341,7 +341,8 @@ bool GSMModule::sendSMS(const char* number, const char* message)
     size_t number_len = strnlen(number, 16);
     /* get length of message */
     size_t message_len = strnlen(message, 160);
-    serial_printf(F("number_len: %zu, message_len: %zu"), number_len, message_len);
+    serial_printf(F("number_len: %u, message_len: %u"), number_len, message_len);
+    serial_flush();
     /* make sure that parameters are null terminated and valid */
     if (number_len < 10 || number_len == 16 || message_len == 160)
     {
