@@ -360,7 +360,7 @@ void setup()
         show_setup_result_final_block(RESULT_FAILURE);
     }
 
-    bool send_status = send_sms("385989986336", smsBuffer);
+    bool send_status = GSMModule::sendSMS("385989986336", smsBuffer);
     show_setup_result_serial_only(send_status);
 
     /* sms sending failed, block */
