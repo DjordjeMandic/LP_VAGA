@@ -318,6 +318,7 @@ void setup()
             /* if not registered on network, sleep for 2 seconds */
             if (!registered_on_network)
             {
+                Serial.printf(F("Waiting for network registration" NEW_LINE));
                 sleep_idle_timeout_millis(2000);
             }
             /* wait for 60 seconds or until registered on network */
