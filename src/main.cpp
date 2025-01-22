@@ -334,7 +334,7 @@ void setup()
 
     Serial.printf(F("Power on self test: %s\n"), POWER_ON_SELF_TEST_RESULT_STRING[static_cast<bool>(power_on_self_test_result.fields.post_pass)]);
 
-    int result = snprintf_P(smsBuffer, sizeof(smsBuffer), PSTR("%S\n1:%.3f\n2:%.3f\n3:%u\n4:%ld\n5:%.5f\n6:%.1f\n7:%.3f\n8:%.3f\n9:%lu\n0x%02X\n%s"), 
+    int result = snprintf_P(smsBuffer, sizeof(smsBuffer), PSTR("%S\n1:%.3f\n2:%.3f\n3:%u\n4:%ld\n5:%.2f\n6:%.1f\n7:%.3f\n8:%.3f\n9:%02u/%02u/%04u-%02u:%02u:%02u\n\n0x%02X %s"), 
                                         STARTUP_MESSAGE_P, 
                                         supply_voltage, // 1
                                         float(AVCC_MIN_VOLTAGE), // 2
@@ -344,9 +344,9 @@ void setup()
                                         measured_10_times_avg, // 6
                                         temp, // 7
                                         humidity, // 8
-                                        date_time.unixtime(), // 9
+                                        date_time.day(), date_time.month(), date_time.year(), date_time.hour(), date_time.minute(), date_time.second(), // 9
                                         power_on_self_test_result.u8_value,
-                                        POWER_ON_SELF_TEST_RESULT_STRING[static_cast<bool>(power_on_self_test_result.fields.post_pass)]); // 10
+                                        POWER_ON_SELF_TEST_RESULT_STRING[static_cast<bool>(power_on_self_test_result.fields.post_pass)]);
     
     
     Serial.printf(F("SMS:\n%s\n"), smsBuffer);
@@ -371,10 +371,28 @@ void setup()
     /* if entered, must be reset manually by pressing reset button */
     if (sms_config_mode)
     {
-        result = snprintf_P(smsBuffer, sizeof(smsBuffer), PSTR("Config:" NEW_LINE 
-                                                               "AREF:1000...1200" NEW_LINE
-                                                               "RTC:DD-MM-YY-HH-MM-SS" NEW_LINE
-                                                               ));
+        /* prepare config sms info */
+        result = snprintf_P(smsBuffer, sizeof(smsBuffer), PSTR("Config:" NEW_LINE NEW_LINE
+                                                                "AREF:1000...1200" NEW_LINE
+                                                                "RTC:DD/MM/YY-HH:MM" NEW_LINE
+                                                                "SMS:HH"));
+        send_status = send_sms("385989986336", smsBuffer);
+
+        if (!send_status)
+        {
+            show_setup_result_final_block(RESULT_FAILURE);
+        }
+
+        bool command_received = false;
+        do
+        {
+            /* read incoming sms content and store it in smsBuffer */
+            /* switch trough sms commands AREF, RTC, SMS */
+            /* parse each command data */
+        } while (!command_received);
+        
+        /* set command data */
+        /* show response by bloicking */
 
         /* sms config mode must always loop until manually reset */
         show_setup_result_final_block(RESULT_FAILURE);
@@ -401,7 +419,7 @@ bool check_sms_buffer_ovf(int snprintf_result)
 {
     if (snprintf_result >= static_cast<int>(sizeof(smsBuffer)) || snprintf_result < 0)
     {
-        snprintf_P(smsBuffer, sizeof(smsBuffer), PSTR("%S\nERROR-OVF:%d\nPOST:%s"), STARTUP_MESSAGE_P, POWER_ON_SELF_TEST_RESULT_STRING[static_cast<bool>(power_on_self_test_result.fields.post_pass)]);
+        snprintf_P(smsBuffer, sizeof(smsBuffer), PSTR("%S\nERROR-OVF:%d\nPOST:0x%02X %s"), STARTUP_MESSAGE_P, power_on_self_test_result.u8_value, POWER_ON_SELF_TEST_RESULT_STRING[static_cast<bool>(power_on_self_test_result.fields.post_pass)]);
         serial_printf(F("SMS-OVF:\n%s\n"), smsBuffer);
         return true;
     }
