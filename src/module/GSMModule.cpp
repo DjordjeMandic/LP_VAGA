@@ -4,6 +4,7 @@
 #include <module/GSMModule.hpp>
 #include <SoftwareSerial.h>
 #include <ResponseBuffer.hpp>
+#include <serial.hpp>
 
 #define STRINGIFY(x) #x
 #define CONCAT_BAUD_RATE_SET_COMMAND(rate) "+IPR=" STRINGIFY(rate)
@@ -346,6 +347,8 @@ bool GSMModule::sendSMS(const char* number, const char* message)
     {
         return false;
     }
+
+    serial_printf(F("SMS->+%s:\n%s\n"), number, message);
 
     /* clear rx buffer before sending the command */
     stream_clear_rx_buffer(GSMModule::software_serial_);
