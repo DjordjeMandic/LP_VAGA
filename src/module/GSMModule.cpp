@@ -148,7 +148,8 @@ void GSMModule::preBeginPowerOn()
 bool GSMModule::begin(unsigned long current_millis, bool save_baud_rate)
 {
     GSMModule::ready_ = false;
-    
+    GSMModule::sms_receive_enabled_ = false;
+
     /* Power on the SIM800 if needed */
     if (!SIM800PowerManager::powerEnabled())
     {
@@ -383,22 +384,77 @@ bool GSMModule::sendSMS(const char* number, const char* message)
     return sscanf_P(response_buffer, PSTR("%*[^+]+CMGS: %hhu%*[^O]OK"), tp_mr) == 1;
 }
 
-bool GSMModule::receiveSMS(const char* sms_content_buffer, size_t sms_content_buffer_size, unsigned long timeout_ms, const char* sms_sender_number, size_t sms_sender_number_size)
+bool GSMModule::enableSMSReceive()
 {
-    if (!GSMModule::ready_ || sms_content_buffer == nullptr || !send_at_command_and_expect_ok(GSMModule::software_serial_, F("+CNMI=2,2,0,0,0")))
+    if (!GSMModule::ready_)
     {
         return false;
     }
 
-    /* clear rx buffer before receiving sms */
-    stream_clear_rx_buffer(GSMModule::software_serial_);
-    bool received = false;
+    bool result = send_at_command_and_expect_ok(GSMModule::software_serial_, F("+CNMI=2,2,0,0,0"));
+
+    /* if result is true, clean rx buffer, be ready for reception */
+    if (result)
+    {
+        stream_clear_rx_buffer(GSMModule::software_serial_);
+    }
+
+    return result;
+}
+
+bool GSMModule::disableSMSReceive()
+{
+    
+}
+
+bool GSMModule::receiveSMS(char* sms_content_buffer, size_t sms_content_buffer_size, unsigned long timeout_ms, char* sms_sender_number_buffer, size_t sms_sender_number_buffer_size)
+{
+    /* setup sms response mode */
+    if (!GSMModule::ready_ || sms_content_buffer == nullptr)
+    {
+        return false;
+    }
+
     unsigned long startTime = millis();
+    const char* rx_cmt = nullptr;
     do
     {
-        /* code */
-    } while (millis() - startTime < timeout_ms);
+        stream_wait_for_response(GSMModule::software_serial_, 0);
+        rx_cmt = strstr_P(response_buffer, PSTR("+CMT: \"+"));
+    } while ((rx_cmt != nullptr) && ((millis() - startTime) < timeout_ms));
     
+    /* if rx_cmt is still nullptr then timeout occured */
+    if (rx_cmt == nullptr)
+    {
+        return false;
+    }
+
+    /* both buffers are supplied but both are 0 in len, just return true */
+    if (sms_sender_number_buffer != nullptr || ((sms_sender_number_buffer_size == 0) && (sms_content_buffer_size == 0)))
+    {
+        return true;
+    }
+
+    /* example response: +CMT: "+<number>","<contant name>","<time>"\r\n<sms_content> */
+    /* find pointer to start of message content */
+    const char* startOfContent = strstr_P(rx_cmt, PSTR("\"\r\n"));
+    if (startOfContent == nullptr)
+    {
+        return false;
+    }
+
+    /* make startOfContent actually point to start of content */
+    startOfContent += 3; // add "<cr><lf>
+    size_t lenOfContent = strnlen(startOfContent, sms_content_buffer_size);
+
+    /* return false if sms_content_buffer_size is not big enough */
+    if (lenOfContent == sms_content_buffer_size)
+    {
+        return false;
+    }
+
+    const char* numberStart = rx_cmt + 8; // "+CMT: "+" - 8 chars
+    const char* numberEnd = strstr_P(numberStart, PSTR("\",\""));
 }
 
 /**
@@ -410,6 +466,7 @@ bool GSMModule::receiveSMS(const char* sms_content_buffer, size_t sms_content_bu
 void GSMModule::end()
 {
     GSMModule::ready_ = false;
+    GSMModule::sms_receive_enabled_ = false;
 
     /* stop listening */
     if (GSMModule::software_serial_ != nullptr)

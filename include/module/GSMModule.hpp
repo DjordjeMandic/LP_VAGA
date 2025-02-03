@@ -40,10 +40,15 @@ public:
 
     static bool sendSMS(const char* number, const char* message);
 
-    static bool receiveSMS(const char* sms_content_buffer, size_t sms_content_buffer_size, unsigned long timeout_ms, const char* sms_sender_number, size_t sms_sender_number_size);
+    static bool enableSMSReceive();
+
+    static bool receiveSMS(char* sms_content_buffer, size_t sms_content_buffer_size, unsigned long timeout_ms, char* sms_sender_number, size_t sms_sender_number_size);
+
+    static bool disableSMSReceive();
 
     static Stream& getStream();
 private:
     static bool ready_; /**< Stores the readiness state of the GSM Module. */
+    static bool sms_receive_enabled_;
     static SoftwareSerial* software_serial_;
 };

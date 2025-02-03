@@ -28,6 +28,9 @@ size_t stream_wait_for_response(Stream* stream, unsigned long response_timeout_m
     /* wait for response*/
     size_t chars_read_into_buffer = 0;
 
+    /* clear response_buffer */
+    memset(response_buffer, '\0', sizeof(response_buffer));
+    
     /* if stream is not null read from it */
     if (stream != nullptr)
     {
