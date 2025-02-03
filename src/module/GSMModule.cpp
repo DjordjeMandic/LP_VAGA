@@ -383,6 +383,24 @@ bool GSMModule::sendSMS(const char* number, const char* message)
     return sscanf_P(response_buffer, PSTR("%*[^+]+CMGS: %hhu%*[^O]OK"), tp_mr) == 1;
 }
 
+bool GSMModule::receiveSMS(const char* sms_content_buffer, size_t sms_content_buffer_size, unsigned long timeout_ms, const char* sms_sender_number, size_t sms_sender_number_size)
+{
+    if (!GSMModule::ready_ || sms_content_buffer == nullptr || !send_at_command_and_expect_ok(GSMModule::software_serial_, F("+CNMI=2,2,0,0,0")))
+    {
+        return false;
+    }
+
+    /* clear rx buffer before receiving sms */
+    stream_clear_rx_buffer(GSMModule::software_serial_);
+    bool received = false;
+    unsigned long startTime = millis();
+    do
+    {
+        /* code */
+    } while (millis() - startTime < timeout_ms);
+    
+}
+
 /**
  * @brief Powers off the SIM800 GSM module and resets the serial pins.
  *

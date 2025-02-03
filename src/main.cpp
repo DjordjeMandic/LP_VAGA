@@ -392,6 +392,7 @@ void setup()
         bool command_received = false;
         do
         {
+            
             /* read incoming sms content and store it in smsBuffer */
             /* switch trough sms commands AREF, RTC, SMS */
             /* parse each command data */
@@ -435,7 +436,7 @@ bool check_sms_buffer_ovf(int snprintf_result)
 void power_all_off()
 {
     /* todo replace this with GSMModule */
-    SIM800PowerManager::powerOff();
+    GSMModule::end();
 
     /* disable physical sensors */
     ScaleModule::end();
