@@ -391,20 +391,15 @@ bool GSMModule::enableSMSReceive()
         return false;
     }
 
-    bool result = send_at_command_and_expect_ok(GSMModule::software_serial_, F("+CNMI=2,2,0,0,0"));
+    GSMModule::sms_receive_enabled_ = send_at_command_and_expect_ok(GSMModule::software_serial_, F("+CNMI=2,2,0,0,0"));
 
     /* if result is true, clean rx buffer, be ready for reception */
-    if (result)
+    if (GSMModule::sms_receive_enabled_)
     {
         stream_clear_rx_buffer(GSMModule::software_serial_);
     }
 
-    return result;
-}
-
-bool GSMModule::disableSMSReceive()
-{
-    
+    return GSMModule::sms_receive_enabled_;
 }
 
 bool GSMModule::receiveSMS(char* sms_content_buffer, size_t sms_content_buffer_size, unsigned long timeout_ms, char* sms_sender_number_buffer, size_t sms_sender_number_buffer_size)
@@ -429,10 +424,26 @@ bool GSMModule::receiveSMS(char* sms_content_buffer, size_t sms_content_buffer_s
         return false;
     }
 
-    /* both buffers are supplied but both are 0 in len, just return true */
-    if (sms_sender_number_buffer != nullptr || ((sms_sender_number_buffer_size == 0) && (sms_content_buffer_size == 0)))
+    /* both buffers are supplied but both are 0 in len or just content buffer is supplied and its 0 in len, just return true */
+    if ((sms_sender_number_buffer != nullptr && sms_sender_number_buffer_size == 0 && sms_content_buffer_size == 0) ||
+        (sms_content_buffer_size == 0))
     {
         return true;
+    }
+
+    // parse the number
+    const char* numberStart = rx_cmt + 8; // "+CMT: "+" - 8 chars
+    const char* numberEnd = strstr_P(numberStart, PSTR("\","));
+    /* if senders number couldnt be parsed, +CMT URC is invalid */
+    if (numberEnd == nullptr ||)
+    {
+        return false;
+    }
+
+    /* if phone number does not end with digit then +CMT response is invalid */
+    if (!isdigit(*(numberEnd-1)))
+    {
+        return false;
     }
 
     /* example response: +CMT: "+<number>","<contant name>","<time>"\r\n<sms_content> */
@@ -447,14 +458,28 @@ bool GSMModule::receiveSMS(char* sms_content_buffer, size_t sms_content_buffer_s
     startOfContent += 3; // add "<cr><lf>
     size_t lenOfContent = strnlen(startOfContent, sms_content_buffer_size);
 
-    /* return false if sms_content_buffer_size is not big enough */
-    if (lenOfContent == sms_content_buffer_size)
+    /* return false if sms_content_buffer_size is not big enough for content */
+    if (lenOfContent >= sms_content_buffer_size)
     {
-        return false;
+        return false; // Buffer too small, content is truncated
     }
 
-    const char* numberStart = rx_cmt + 8; // "+CMT: "+" - 8 chars
-    const char* numberEnd = strstr_P(numberStart, PSTR("\",\""));
+    /* copy the content to buffer */
+    strncpy(sms_content_buffer, startOfContent, lenOfContent);
+
+    /* null terminate the content buffer just in case */
+    sms_content_buffer[sms_content_buffer_size - 1] = '\0';
+
+    /* if sender number buffer is not provided or len is 0, return true since were done with content copy */
+    if (sms_sender_number_buffer == nullptr || sms_sender_number_buffer_size == 0)
+    {
+        return true;
+    }
+
+    /* null terminate the senders phone number */    
+    *const_cast<char*>(numberEnd) = '\0';
+
+
 }
 
 /**
