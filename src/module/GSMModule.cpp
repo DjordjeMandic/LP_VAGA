@@ -418,6 +418,8 @@ bool GSMModule::receiveSMS(char* sms_content_buffer, size_t sms_content_buffer_s
         rx_cmt = strstr_P(response_buffer, PSTR("+CMT: \"+"));
     } while ((rx_cmt != nullptr) && ((millis() - startTime) < timeout_ms));
     
+    Serial.printf(F("RX:\n%s\n:RX\n"), response_buffer);
+
     /* if rx_cmt is still nullptr then timeout occured */
     if (rx_cmt == nullptr)
     {
@@ -435,7 +437,7 @@ bool GSMModule::receiveSMS(char* sms_content_buffer, size_t sms_content_buffer_s
     const char* numberStart = rx_cmt + 8; // "+CMT: "+" - 8 chars
     const char* numberEnd = strstr_P(numberStart, PSTR("\","));
     /* if senders number couldnt be parsed, +CMT URC is invalid */
-    if (numberEnd == nullptr ||)
+    if (numberEnd == nullptr)
     {
         return false;
     }
@@ -465,7 +467,7 @@ bool GSMModule::receiveSMS(char* sms_content_buffer, size_t sms_content_buffer_s
     }
 
     /* copy the content to buffer */
-    strncpy(sms_content_buffer, startOfContent, lenOfContent);
+    strlcpy(sms_content_buffer, startOfContent, sms_content_buffer_size);
 
     /* null terminate the content buffer just in case */
     sms_content_buffer[sms_content_buffer_size - 1] = '\0';
@@ -479,7 +481,11 @@ bool GSMModule::receiveSMS(char* sms_content_buffer, size_t sms_content_buffer_s
     /* null terminate the senders phone number */    
     *const_cast<char*>(numberEnd) = '\0';
 
+    strlcpy(sms_sender_number_buffer, numberStart, sms_sender_number_buffer_size);
 
+    sms_sender_number_buffer[sms_sender_number_buffer_size - 1] = '\0';
+
+    return true;
 }
 
 /**

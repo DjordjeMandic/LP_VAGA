@@ -378,7 +378,7 @@ void setup()
         /* prepare config sms info */
         result = snprintf_P(smsBuffer, sizeof(smsBuffer), PSTR("Config:" NEW_LINE NEW_LINE
                                                                 "AREF:1000...1200" NEW_LINE
-                                                                "RTC:DD/MM/YY-HH:MM" NEW_LINE
+                                                                "RTC:DD/MM/YYYY-HH:MM" NEW_LINE
                                                                 "SMS:HH"));
                                                                 
         send_status = GSMModule::sendSMS("385989986336", smsBuffer);
@@ -389,10 +389,14 @@ void setup()
             show_setup_result_final_block(RESULT_FAILURE);
         }
 
+        GSMModule::enableSMSReceive();
         bool command_received = false;
         do
         {
-            
+            char sender[16];
+            GSMModule::receiveSMS(smsBuffer, sizeof(smsBuffer), 1000, sender, sizeof(sender));
+            sender[15] = '\0';
+            Serial.printf(F("sender: %s\nsms: %s\n"), sender, smsBuffer);
             /* read incoming sms content and store it in smsBuffer */
             /* switch trough sms commands AREF, RTC, SMS */
             /* parse each command data */
