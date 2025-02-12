@@ -131,6 +131,7 @@ bool send_at_command_and_expect_ok(Stream* stream, const __FlashStringHelper* co
 
 /* Static variable to track the readiness of the GSM Module */
 bool GSMModule::ready_ = false;
+bool GSMModule::sms_receive_enabled_ = false;
 
 /* Static variable to store pointer to the SoftwareSerial instance */
 SoftwareSerial* GSMModule::software_serial_ = nullptr;

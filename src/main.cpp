@@ -394,6 +394,8 @@ void setup()
         do
         {
             char sender[16];
+            memset(sender, '\0', sizeof(sender));
+            memset(smsBuffer, '\0', sizeof(smsBuffer));
             GSMModule::receiveSMS(smsBuffer, sizeof(smsBuffer), 1000, sender, sizeof(sender));
             sender[15] = '\0';
             Serial.printf(F("sender: %s\nsms: %s\n"), sender, smsBuffer);
