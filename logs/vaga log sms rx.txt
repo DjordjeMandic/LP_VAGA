@@ -1,0 +1,74 @@
+21:48:00.994 > sender:
+21:48:00.996 > sms:
+21:48:02.097 > RX:
+21:48:02.099 >
+21:48:02.100 > +CMT: "+385989986336","","25/02/12,21:47:50+04"
+21:48:02.112 > Test
+21:48:02.114 >
+21:48:02.114 > :RX
+21:48:02.115 > sender: 385989986336
+21:48:02.121 > sms: Test
+
+21:50:45.799 > sender:
+21:50:45.802 > sms:
+21:50:47.502 > RX:
+21:50:47.504 >
+21:50:47.504 > +CMT: "+385989986336","","25/02/12,21:50:34+04"
+21:50:47.517 > Test SMS poruke. Provera sistema slanja i prijema. Ako stigne ispravno i brzo, sve radi kako treba. Hvala na testiranju! 1234567890
+21:50:47.552 >
+21:50:47.552 > :RX
+21:50:47.553 > sender: 385989986336
+21:50:47.558 > sms: Test SMS poruke. Provera sistema slanja i prijema. Ako stigne ispravno i brzo, sve radi kako treba. Hvala na testiranju! 1234567890
+
+1:53:46.453 > sender:
+21:53:46.455 > sms:
+21:53:48.255 > RX:
+21:53:48.257 >
+21:53:48.258 > +CMT: "+385989986336","","25/02/12,21:53:35+04"
+21:53:48.270 > Test SMS poruke za proveru sistema slanja i prijema. Ako stigne ispravno i bez gresaka, sve radi kako treba. Hvala na testiranju! 1234567890 ABC
+21:53:48.308 >
+21:53:48.308 > :RX
+21:53:48.309 > sender: 385989986336
+21:53:48.314 > sms: Test SMS poruke za proveru sistema slanja i prijema. Ako stigne ispravno i bez gresaka, sve radi kako treba. Hvala na testiranju! 1234567890 ABC
+21:53:48.354 >
+
+21:54:39.137 >
+21:54:39.137 > +CMT: "+385989986336","","25/02/12,21:54:25+04"
+21:54:39.150 > Test SMS poruke za proveru sistema slanja i prijema. Ako stigne ispravno i bez gresaka, sve radi kako treba. Hvala na testiranju! 1234567890 ABCD
+21:54:39.189 >
+21:54:39.189 > :RX
+21:54:39.190 > sender: 385989986336
+21:54:39.196 > sms: Test SMS poruke za proveru sistema slanja i prijema. Ako stigne ispravno i bez gresaka, sve radi kako treba. Hvala na testiranju! 1234567890 ABCD
+
+21:56:08.594 > sender:
+21:56:08.598 > sms:
+21:56:10.603 > RX:
+21:56:10.603 >
+21:56:10.605 > +CMT: "+385989986336","","25/02/12,21:55:57+04"
+21:56:10.617 > Test SMS poruke za proveru sistema slanja i prijema. Ako stigne ispravno i bez gresaka, sve radi kako treba. Hvala na testiranju! 1234567890 ABC 0123456789 ABCD
+21:56:10.659 >
+21:56:10.660 > :RX
+21:56:10.660 > sender:
+21:56:10.662 > sms:
+
+21:57:01.479 > RX:
+21:57:01.480 >
+21:57:01.480 > +CMT: "+385989986336","","25/02/12,21:56:48+04"
+21:57:01.494 > Test SMS poruke za proveru sistema slanja i prijema. Ako stigne ispravno i bez gresaka, sve radi kako treba. Hvala na testiranju! 1234567890 ABC 0123456789 ABC
+21:57:01.536 >
+21:57:01.536 > :RX
+21:57:01.536 > sender:
+21:57:01.539 > sms:
+
+21:58:17.069 > sender:
+21:58:17.072 > sms:
+21:58:18.738 > RX:
+21:58:18.740 >
+21:58:18.740 > +CMT: "+385989986336","","25/02/12,21:58:05+04"
+21:58:18.753 > Test SMS poruke za proveru sistema slanja i prijema. Ako stigne ispravno i bez gresaka, sve radi kako treba. Hvala na testiranju! 1234567890 ABC 0123456789
+21:58:18.793 >
+21:58:18.793 > :RX
+21:58:18.795 > sender: 385989986336
+21:58:18.800 > sms: Test SMS poruke za proveru sistema slanja i prijema. Ako stigne ispravno i bez gresaka, sve radi kako treba. Hvala na testiranju! 1234567890 ABC 0123456789
+21:58:18.842 >
+21:58:19.828 > RX:
