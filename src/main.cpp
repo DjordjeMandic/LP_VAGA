@@ -379,35 +379,45 @@ void setup()
         result = snprintf_P(smsBuffer, sizeof(smsBuffer), PSTR("Config:" NEW_LINE NEW_LINE
                                                                 "AREF:1000...1200" NEW_LINE
                                                                 "RTC:DD/MM/YYYY-HH:MM" NEW_LINE
-                                                                "SMS:HH"));
+                                                                "SMS:HH" NEW_LINE
+                                                                "OK-OFF"));
                                                                 
         send_status = GSMModule::sendSMS("385989986336", smsBuffer);
         show_setup_result_serial_only(send_status);
 
-        if (!send_status)
+        if (!send_status || !GSMModule::enableSMSReceive())
         {
             show_setup_result_final_block(RESULT_FAILURE);
         }
 
-        GSMModule::enableSMSReceive();
-        bool command_received = false;
+        char sender[16];
+        unsigned long start = millis();
         do
         {
-            char sender[16];
             memset(sender, '\0', sizeof(sender));
             memset(smsBuffer, '\0', sizeof(smsBuffer));
-            GSMModule::receiveSMS(smsBuffer, sizeof(smsBuffer), 1000, sender, sizeof(sender));
-            sender[15] = '\0';
-            Serial.printf(F("sender: %s\nsms: %s\n"), sender, smsBuffer);
             /* read incoming sms content and store it in smsBuffer */
             /* switch trough sms commands AREF, RTC, SMS */
             /* parse each command data */
-        } while (!command_received);
-        
-        /* set command data */
-        /* show response by bloicking */
+            if (GSMModule::receiveSMS(smsBuffer, sizeof(smsBuffer), 0, sender, sizeof(sender))) {
+                serial_printf(F("SMS RX +%s:\n%s\nEND\n"), sender, smsBuffer);
 
-        /* sms config mode must always loop until manually reset */
+                uint16_t aref, year;
+                uint8_t day, month, hour, minute, sms_hour;
+
+                if (5 == sscanf_P(smsBuffer, PSTR("RTC:%" SCNu8 "/%" SCNu8 "/%" SCNu16 "-%" SCNu8 ":%" SCNu8), &day, &month, &year, &hour, &minute)) {
+                    bool adjust_result = power_on_self_test_result.fields.rtc_status && RTCModule::adjust(DateTime(year, month, day, hour, minute));
+                    snprintf_P(smsBuffer, sizeof(smsBuffer), adjust_result ? PSTR("OK") : PSTR("ERR"));
+                    send_status &= GSMModule::sendSMS("385989986336", smsBuffer);
+                    continue;
+                }
+
+                if (strstr_P(smsBuffer, PSTR("OK-OFF")) != nullptr) {
+                    show_setup_result_final_block(RESULT_SUCCESS);
+                }
+            }
+            sleep_idle_timeout_millis(1000);
+        } while (millis() - start < 300000UL); /* 5 minute timeout */
         show_setup_result_final_block(RESULT_FAILURE);
     }
 

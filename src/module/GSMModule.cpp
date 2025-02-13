@@ -273,7 +273,7 @@ bool GSMModule::registeredOnNetwork()
     /* variables to store parsed data */
     uint8_t creg_n;
     uint8_t creg_stat = 0;
-    serial_printf(F("CREG resp: %s"), response_buffer);
+    serial_printf(F("CREG resp:\n%s\n"), response_buffer);
     /* parse state, return false if parsing failed or its not 1 or 5 */
     return (sscanf_P(response_buffer, RESPONSE_FMT_PARSER_CREG_CSQ_P, &creg_n, &creg_stat) == 2) 
             && ((creg_stat == 1) || (creg_stat == 5));
@@ -317,6 +317,7 @@ bool GSMModule::signalQuality(uint8_t& csq_rssi, uint8_t& csq_ber)
         return false;
     }
 
+    serial_printf(F("CSQ resp:\n%s\n"), response_buffer);
     /* parse state, return false if parsing failed or parameters are out of range for valid signal */
     return (sscanf_P(response_buffer, RESPONSE_FMT_PARSER_CREG_CSQ_P, &csq_rssi, &csq_ber) == 2) 
             && ((csq_rssi <= 31) || (csq_ber <= 7));
@@ -387,6 +388,7 @@ bool GSMModule::sendSMS(const char* number, const char* message)
 
 bool GSMModule::enableSMSReceive()
 {
+    serial_printf(F("SMS RX EN"));
     if (!GSMModule::ready_)
     {
         return false;
@@ -419,7 +421,7 @@ bool GSMModule::receiveSMS(char* sms_content_buffer, size_t sms_content_buffer_s
         rx_cmt = strstr_P(response_buffer, PSTR("+CMT: \"+"));
     } while ((rx_cmt != nullptr) && ((millis() - startTime) < timeout_ms));
     
-    Serial.printf(F("RX:\n%s\n:RX\n"), response_buffer);
+    serial_printf(F("RX:\n%s\n:RX\n"), response_buffer);
 
     /* if rx_cmt is still nullptr then timeout occured */
     if (rx_cmt == nullptr)
@@ -459,10 +461,9 @@ bool GSMModule::receiveSMS(char* sms_content_buffer, size_t sms_content_buffer_s
 
     /* make startOfContent actually point to start of content */
     startOfContent += 3; // add "<cr><lf>
-    size_t lenOfContent = strnlen(startOfContent, sms_content_buffer_size);
 
     /* return false if sms_content_buffer_size is not big enough for content */
-    if (lenOfContent >= sms_content_buffer_size)
+    if (strnlen(startOfContent, sms_content_buffer_size) >= sms_content_buffer_size)
     {
         return false; // Buffer too small, content is truncated
     }
