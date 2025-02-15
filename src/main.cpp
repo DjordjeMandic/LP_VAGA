@@ -399,7 +399,7 @@ void setup()
         /* initialize adc for internal reference calibration */
         ADCHelper::refBGInit();
 
-        bool shouldSend = true;
+        bool shouldSend = false;
         char sender[16];
         unsigned long start = millis();
         do
