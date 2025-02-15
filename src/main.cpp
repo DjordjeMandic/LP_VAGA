@@ -407,6 +407,9 @@ void setup()
             if (shouldSend) {
                 send_status &= GSMModule::sendSMS("385989986336", smsBuffer);
                 shouldSend = false;
+                if (!send_status) {
+                    show_setup_result_final_block(RESULT_FAILURE);
+                }
             }
             memset(sender, '\0', sizeof(sender));
             memset(smsBuffer, '\0', sizeof(smsBuffer));
