@@ -7,6 +7,7 @@ float EEMEM DataEEPROM::lastMeasurementKgEemem_ = 0.0f;
 float EEMEM DataEEPROM::scaleCalibrationValueEemem_ = 1.0f;
 long EEMEM DataEEPROM::scaleTareOffsetEemem_ = 0;
 uint16_t EEMEM DataEEPROM::internalAdcReferenceEemem_ = 1100U;
+uint8_t EEMEM DataEEPROM::smsReportHourOfTheDayEemem_ = 21U;
 
 /* Getters */
 
@@ -36,6 +37,11 @@ uint16_t DataEEPROM::getInternalAdcReference()
     return eeprom_read_word(&internalAdcReferenceEemem_);
 }
 
+uint8_t DataEEPROM::getSMSReportHourOfTheDay() {
+    eeprom_busy_wait();
+    return eeprom_read_byte(&smsReportHourOfTheDayEemem_);
+}
+
 /* Setters */
 
 void DataEEPROM::setLastMeasurementKg(const float last_measurement_kg)
@@ -60,4 +66,9 @@ void DataEEPROM::setInternalAdcReference(const uint16_t internal_reference)
 {
     eeprom_busy_wait();
     eeprom_update_word(&internalAdcReferenceEemem_, internal_reference);
+}
+
+void DataEEPROM::setSMSReportHourOfTheDay(const uint8_t hour) {
+    eeprom_busy_wait();
+    eeprom_update_byte(&smsReportHourOfTheDayEemem_, hour);
 }

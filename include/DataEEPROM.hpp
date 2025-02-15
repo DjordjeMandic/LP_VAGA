@@ -34,6 +34,11 @@ public:
     static uint16_t getInternalAdcReference();
 
     /**
+     * @brief Retrieves the SMS report hour of the day from EEPROM.
+     */
+    static uint8_t getSMSReportHourOfTheDay();
+
+    /**
      * @brief Updates the last measurement in kilograms in EEPROM.
      * 
      * @param[in] last_measurement_kg The value to store in EEPROM.
@@ -61,10 +66,18 @@ public:
      */
     static void setInternalAdcReference(const uint16_t internal_reference);
 
+    /**
+     * @brief Updates the SMS report hour of the day in EEPROM.
+     * 
+     * @param[in] hour The value to store in EEPROM.
+     */
+    static void setSMSReportHourOfTheDay(const uint8_t hour);
+
 private:
     /* Variables in EEPROM */
     static float EEMEM lastMeasurementKgEemem_;
     static float EEMEM scaleCalibrationValueEemem_;
     static long EEMEM scaleTareOffsetEemem_;
     static uint16_t EEMEM internalAdcReferenceEemem_;
+    static uint8_t EEMEM smsReportHourOfTheDayEemem_;
 };
