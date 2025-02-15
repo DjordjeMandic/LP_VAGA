@@ -51,6 +51,7 @@ const DateTime timer_mode_datetime = DateTime(2025, 1, 1);
 bool setup_calibrate_internal_reference();
 bool setup_calibrate_scale_factor();
 
+uint8_t sms_hour_of_day = DataEEPROM::getSMSReportHourOfTheDay();
 uint16_t internal_reference = DataEEPROM::getInternalAdcReference();
 float scale_factor = DataEEPROM::getScaleCalibrationValue();
 long scale_tare_offset = DataEEPROM::getScaleTareOffset();
@@ -65,7 +66,6 @@ static const char STARTUP_MESSAGE_P[] PROGMEM = STRING_STARTUP_MESSAGE NEW_LINE;
 char smsBuffer[GSM_SMS_TEXT_MAX_LEN + 1];
 
 static const char* const POWER_ON_SELF_TEST_RESULT_STRING[] = {"FAIL", "PASS"};
-
 
 typedef union {
     uint8_t u8_value; // The entire 8-bit value
@@ -85,6 +85,9 @@ power_on_self_test_result_t power_on_self_test_result = { .u8_value = 0 };
 
 bool send_sms(const char* number, const char* message);
 bool check_sms_buffer_ovf(int snprintf_result);
+
+bool set_internal_reference(uint16_t input_mv);
+
 void setup()
 {
     power_all_off();
@@ -134,6 +137,7 @@ void setup()
     if (internal_reference < 1000 || internal_reference > 1200)
     {
         Serial.printf(F(STRING_REF_INVALID " %u" NEW_LINE), internal_reference);
+        set_internal_reference(internal_reference);
         show_setup_result_final_block(RESULT_FAILURE);
     }
     /* check min avcc voltage constant */
@@ -380,7 +384,9 @@ void setup()
                                                                 "AREF:1000...1200" NEW_LINE
                                                                 "RTC:DD/MM/YYYY-HH:MM" NEW_LINE
                                                                 "SMS:HH" NEW_LINE
-                                                                "OK-OFF"));
+                                                                "OK-OFF" NEW_LINE
+                                                                NEW_LINE
+                                                                "AVCC: %f V"), get_supply_voltage());
                                                                 
         send_status = GSMModule::sendSMS("385989986336", smsBuffer);
         show_setup_result_serial_only(send_status);
@@ -389,11 +395,19 @@ void setup()
         {
             show_setup_result_final_block(RESULT_FAILURE);
         }
+        
+        /* initialize adc for internal reference calibration */
+        ADCHelper::refBGInit();
 
+        bool shouldSend = true;
         char sender[16];
         unsigned long start = millis();
         do
         {
+            if (shouldSend) {
+                send_status &= GSMModule::sendSMS("385989986336", smsBuffer);
+                shouldSend = false;
+            }
             memset(sender, '\0', sizeof(sender));
             memset(smsBuffer, '\0', sizeof(smsBuffer));
             /* read incoming sms content and store it in smsBuffer */
@@ -404,14 +418,28 @@ void setup()
 
                 uint16_t aref, year;
                 uint8_t day, month, hour, minute, sms_hour;
-
+                shouldSend = true;
                 if (5 == sscanf_P(smsBuffer, PSTR("RTC:%" SCNu8 "/%" SCNu8 "/%" SCNu16 "-%" SCNu8 ":%" SCNu8), &day, &month, &year, &hour, &minute)) {
                     bool adjust_result = power_on_self_test_result.fields.rtc_status && RTCModule::adjust(DateTime(year, month, day, hour, minute));
                     snprintf_P(smsBuffer, sizeof(smsBuffer), adjust_result ? PSTR("OK") : PSTR("ERR"));
-                    send_status &= GSMModule::sendSMS("385989986336", smsBuffer);
                     continue;
                 }
 
+                if (1 == sscanf_P(smsBuffer, PSTR("AREF:%" SCNu16), &aref)) {
+                    bool result = set_internal_reference(aref);
+                    snprintf_P(smsBuffer, sizeof(smsBuffer), PSTR("AREF: %u mV\nAVCC: %f V\n%S"), internal_reference, get_supply_voltage(), result ? PSTR("OK") : PSTR("ERR"));
+                    continue;
+                }
+
+                if (1 == sscanf_P(smsBuffer, PSTR("SMS:%" SCNu8), &sms_hour)) {
+                    if (sms_hour < 24) {
+                        sms_hour_of_day = sms_hour;
+                    }
+                    snprintf_P(smsBuffer, sizeof(smsBuffer), PSTR("SMS: %u\n%S"), sms_hour_of_day, sms_hour_of_day == sms_hour ? PSTR("OK") : PSTR("ERR"));
+                    continue;
+                }
+
+                shouldSend = false;
                 if (strstr_P(smsBuffer, PSTR("OK-OFF")) != nullptr) {
                     show_setup_result_final_block(RESULT_SUCCESS);
                 }
@@ -583,7 +611,17 @@ bool setup_calibrate_internal_reference()
         Serial.printf(F("input_mv: %u, RX %zu bytes: %s" NEW_LINE), input_mv, rx_count, response_buffer);
     } while (input_mv > 1200 || input_mv < 1000);
 
+    return set_internal_reference(input_mv);
+}
+
+bool set_internal_reference(uint16_t input_mv)
+{
+    bool in_range = true;
     Serial.printf(F(STRING_INPUT_SC_SAPCE "%u" NEW_LINE), input_mv);
+    if (input_mv < 1000 || input_mv > 1200) {
+        in_range = false;
+        input_mv = 1100;
+    }
 
     /* save to EEPROM */
     internal_reference = input_mv;
@@ -595,7 +633,7 @@ bool setup_calibrate_internal_reference()
     float voltage = get_supply_voltage();
     Serial.printf(F(STRING_SUPPLY_VOLTAGE_SC_SPACE "%.3f" STRING_SPACE_V NEW_LINE), voltage);
 
-    return internal_reference == DataEEPROM::getInternalAdcReference() ? RESULT_SUCCESS : RESULT_FAILURE;
+    return (in_range && (internal_reference == DataEEPROM::getInternalAdcReference())) ? RESULT_SUCCESS : RESULT_FAILURE;
 }
 
 bool setup_calibrate_scale_factor()
