@@ -596,7 +596,7 @@ void loop()
         memset(smsBuffer, '\0', sizeof(smsBuffer));
         snprintf_P(smsBuffer, sizeof(smsBuffer), PSTR("[Masa]: %.2fkg" NEW_LINE
                                                       "[Unos/24h]: %.2fkg" NEW_LINE
-                                                      "[Temperatura]: %.2f°C" NEW_LINE
+                                                      "[Temperatura]: %.2fC" NEW_LINE
                                                       "[Vlaznost]: %.1f%%" NEW_LINE
                                                       "[Signal]: %u/9" NEW_LINE
                                                       "[Napon]: %.3fV" NEW_LINE
