@@ -39,6 +39,20 @@ public:
     static uint8_t getSMSReportHourOfTheDay();
 
     /**
+     * @brief Retrieves the phone number stored in EEPROM after decoding.
+     *
+     * This function reads a fixed-size, encoded phone number from EEPROM, decodes it,
+     * and validates that it contains only digit characters and is properly null-terminated.
+     * The decoded phone number must be at least 4 digits long. If the decoded value is valid,
+     * it is copied into the supplied buffer provided that the buffer is large enough.
+     *
+     * @param[in] phone_number_buffer Buffer to store the decoded phone number.
+     * @param[in] phone_number_buffer_size Size of the provided buffer.
+     * @return true if the phone number was successfully retrieved, decoded, and validated; false otherwise.
+     */
+    static bool getPhoneNumber(char* phone_number_buffer, uint8_t phone_number_buffer_size);
+
+    /**
      * @brief Updates the last measurement in kilograms in EEPROM.
      * 
      * @param[in] last_measurement_kg The value to store in EEPROM.
@@ -74,10 +88,12 @@ public:
     static void setSMSReportHourOfTheDay(const uint8_t hour);
 
 private:
+
     /* Variables in EEPROM */
     static float EEMEM lastMeasurementKgEemem_;
     static float EEMEM scaleCalibrationValueEemem_;
     static long EEMEM scaleTareOffsetEemem_;
     static uint16_t EEMEM internalAdcReferenceEemem_;
     static uint8_t EEMEM smsReportHourOfTheDayEemem_;
+    static char EEMEM phoneNumberEemem_[16];
 };

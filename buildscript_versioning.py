@@ -1,3 +1,5 @@
+Import("env")
+
 import datetime
 tm = datetime.datetime.today()
 
@@ -29,3 +31,5 @@ hf = """
 """.format(build_no, version+str(build_no), datetime.datetime.now(), version+str(build_no))
 with open(FILENAME_VERSION_H, 'w+') as f:
     f.write(hf)
+
+env.Replace(PROGNAME="lp_gsm_scale_firmware_{}".format(build_no))

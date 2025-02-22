@@ -55,7 +55,6 @@ uint8_t sms_hour_of_day = DataEEPROM::getSMSReportHourOfTheDay();
 uint16_t internal_reference = DataEEPROM::getInternalAdcReference();
 float scale_factor = DataEEPROM::getScaleCalibrationValue();
 long scale_tare_offset = DataEEPROM::getScaleTareOffset();
-
 float calculate_supply_voltage(uint16_t adc_value, uint16_t reference_voltage = internal_reference);
 
 #define NEW_LINE "\n"
@@ -83,10 +82,18 @@ typedef union {
 
 power_on_self_test_result_t power_on_self_test_result = { .u8_value = 0 };
 
+char phone_number_to_send_sms[16];
+
 bool send_sms(const char* number, const char* message);
 bool check_sms_buffer_ovf(int snprintf_result);
-
+uint8_t mapCSQToSignalLevel(const uint8_t csq);
 bool set_internal_reference(uint16_t input_mv);
+DateTime date_time;
+
+void rtc_alarm_isr()
+{
+
+}
 
 void setup()
 {
@@ -104,6 +111,10 @@ void setup()
     /* set baud rate in Config.hpp */
     serial_begin();
     Serial.printf(FPSTR(STARTUP_MESSAGE_P));
+
+    if (sms_hour_of_day > 23) {
+        sms_hour_of_day = 21;
+    }
 
     /* read buttons */
     bool calibrate_button_pressed = BUTTON_PRESSED(BUTTON_CALIBRATE_PIN, BUTTON_CALIBRATE_PIN_ACTIVE_STATE);
@@ -237,7 +248,7 @@ void setup()
     bool rtc_lost_power = true; /* assume power loss */
     bool rtc_time_valid = false; /* assume time is not valid */
     bool rtc_timer_mode_time_adjusted = false; /* assume timer time has not been adjusted */
-    DateTime date_time;
+
 
     do
     {
@@ -342,7 +353,7 @@ void setup()
 
     date_time = RTCModule::now();
 
-    int result = snprintf_P(smsBuffer, sizeof(smsBuffer), PSTR("%S\n1:%.3f\n2:%.3f\n3:%u\n4:%ld\n5:%.2f\n6:%.1f\n7:%.1f\n8:%.1f\n9:%02u/%02u/%04u-%02u:%02u:%02u\n\n0x%02X %s"), 
+    int result = snprintf_P(smsBuffer, sizeof(smsBuffer), PSTR("%S\n1:%.3f\n2:%.3f\n3:%u\n4:%ld\n5:%.2f\n6:%.1f\n7:%.1f\n8:%.1f\n9:%u\n%02u/%02u/%04u-%02u:%02u:%02u\n\n0x%02X %s"), 
                                         STARTUP_MESSAGE_P, 
                                         supply_voltage, // 1
                                         float(AVCC_MIN_VOLTAGE), // 2
@@ -352,7 +363,8 @@ void setup()
                                         measured_10_times_avg, // 6
                                         temp, // 7
                                         humidity, // 8
-                                        date_time.day(), date_time.month(), date_time.year(), date_time.hour(), date_time.minute(), date_time.second(), // 9
+                                        sms_hour_of_day, // 9
+                                        date_time.day(), date_time.month(), date_time.year(), date_time.hour(), date_time.minute(), date_time.second(),
                                         power_on_self_test_result.u8_value,
                                         POWER_ON_SELF_TEST_RESULT_STRING[static_cast<bool>(power_on_self_test_result.fields.post_pass)]);
     
@@ -367,7 +379,12 @@ void setup()
         show_setup_result_final_block(RESULT_FAILURE);
     }
 
-    bool send_status = GSMModule::sendSMS("385989986336", smsBuffer);
+    if (!DataEEPROM::getPhoneNumber(phone_number_to_send_sms, sizeof(phone_number_to_send_sms))) {
+        Serial.printf(F("Phone number not set\n"));
+        show_setup_result_final_block(RESULT_FAILURE);
+    }
+
+    bool send_status = GSMModule::sendSMS(phone_number_to_send_sms, smsBuffer);
     show_setup_result_serial_only(send_status);
 
     /* sms sending failed, block */
@@ -388,7 +405,7 @@ void setup()
                                                                 NEW_LINE
                                                                 "AVCC: %f V"), get_supply_voltage());
                                                                 
-        send_status = GSMModule::sendSMS("385989986336", smsBuffer);
+        send_status = GSMModule::sendSMS(phone_number_to_send_sms, smsBuffer);
         show_setup_result_serial_only(send_status);
 
         if (!send_status || !GSMModule::enableSMSReceive())
@@ -405,50 +422,49 @@ void setup()
         do
         {
             if (shouldSend) {
-                send_status &= GSMModule::sendSMS("385989986336", smsBuffer);
+                send_status &= GSMModule::sendSMS(phone_number_to_send_sms, smsBuffer);
                 shouldSend = false;
-                if (!send_status) {
-                    show_setup_result_final_block(RESULT_FAILURE);
-                }
             }
             memset(sender, '\0', sizeof(sender));
             memset(smsBuffer, '\0', sizeof(smsBuffer));
+            sleep_idle_timeout_millis(1000);
             /* read incoming sms content and store it in smsBuffer */
             /* switch trough sms commands AREF, RTC, SMS */
             /* parse each command data */
-            if (GSMModule::receiveSMS(smsBuffer, sizeof(smsBuffer), 0, sender, sizeof(sender))) {
-                serial_printf(F("SMS RX +%s:\n%s\nEND\n"), sender, smsBuffer);
-
-                uint16_t aref, year;
-                uint8_t day, month, hour, minute, sms_hour;
-                shouldSend = true;
-                if (5 == sscanf_P(smsBuffer, PSTR("RTC:%" SCNu8 "/%" SCNu8 "/%" SCNu16 "-%" SCNu8 ":%" SCNu8), &day, &month, &year, &hour, &minute)) {
-                    bool adjust_result = power_on_self_test_result.fields.rtc_status && RTCModule::adjust(DateTime(year, month, day, hour, minute));
-                    snprintf_P(smsBuffer, sizeof(smsBuffer), adjust_result ? PSTR("OK") : PSTR("ERR"));
-                    continue;
-                }
-
-                if (1 == sscanf_P(smsBuffer, PSTR("AREF:%" SCNu16), &aref)) {
-                    bool result = set_internal_reference(aref);
-                    snprintf_P(smsBuffer, sizeof(smsBuffer), PSTR("AREF: %u mV\nAVCC: %f V\n%S"), internal_reference, get_supply_voltage(), result ? PSTR("OK") : PSTR("ERR"));
-                    continue;
-                }
-
-                if (1 == sscanf_P(smsBuffer, PSTR("SMS:%" SCNu8), &sms_hour)) {
-                    if (sms_hour < 24) {
-                        sms_hour_of_day = sms_hour;
-                    }
-                    snprintf_P(smsBuffer, sizeof(smsBuffer), PSTR("SMS: %u\n%S"), sms_hour_of_day, sms_hour_of_day == sms_hour ? PSTR("OK") : PSTR("ERR"));
-                    continue;
-                }
-
-                shouldSend = false;
-                if (strstr_P(smsBuffer, PSTR("OK-OFF")) != nullptr) {
-                    show_setup_result_final_block(RESULT_SUCCESS);
-                }
+            if (!GSMModule::receiveSMS(smsBuffer, sizeof(smsBuffer), 0, sender, sizeof(sender))) {
+                continue;
             }
-            sleep_idle_timeout_millis(1000);
-        } while (millis() - start < 300000UL); /* 5 minute timeout */
+            serial_printf(F("SMS RX +%s:\n%s\nEND\n"), sender, smsBuffer);
+
+            uint16_t aref, year;
+            uint8_t day, month, hour, minute, sms_hour;
+            shouldSend = true;
+            if (5 == sscanf_P(smsBuffer, PSTR("RTC:%" SCNu8 "/%" SCNu8 "/%" SCNu16 "-%" SCNu8 ":%" SCNu8), &day, &month, &year, &hour, &minute)) {
+                bool adjust_result = power_on_self_test_result.fields.rtc_status && RTCModule::adjust(DateTime(year, month, day, hour, minute));
+                snprintf_P(smsBuffer, sizeof(smsBuffer), adjust_result ? PSTR("OK") : PSTR("ERR"));
+                continue;
+            }
+
+            if (1 == sscanf_P(smsBuffer, PSTR("AREF:%" SCNu16), &aref)) {
+                bool result = set_internal_reference(aref);
+                snprintf_P(smsBuffer, sizeof(smsBuffer), PSTR("AREF: %u mV\nAVCC: %f V\n%S"), internal_reference, get_supply_voltage(), result ? PSTR("OK") : PSTR("ERR"));
+                continue;
+            }
+
+            if (1 == sscanf_P(smsBuffer, PSTR("SMS:%" SCNu8), &sms_hour)) {
+                if (sms_hour < 24) {
+                    sms_hour_of_day = sms_hour;
+                    DataEEPROM::setSMSReportHourOfTheDay(sms_hour_of_day);
+                }
+                snprintf_P(smsBuffer, sizeof(smsBuffer), PSTR("SMS: %u\n%S"), sms_hour_of_day, sms_hour_of_day == sms_hour ? PSTR("OK") : PSTR("ERR"));
+                continue;
+            }
+
+            shouldSend = false;
+            if (strstr_P(smsBuffer, PSTR("OK-OFF")) != nullptr) {
+                show_setup_result_final_block(RESULT_SUCCESS);
+            }
+        } while (send_status && (millis() - start < 600000UL)); /* 10 minute timeout */
         show_setup_result_final_block(RESULT_FAILURE);
     }
 
@@ -461,12 +477,156 @@ void setup()
 
 
     /* test failed, display result and block, do not continue to loop */
-    show_setup_result_final_block(RESULT_FAILURE);
+    if (!power_on_self_test_result.fields.post_pass) {
+        show_setup_result_final_block(RESULT_FAILURE);
+    }
+
+    power_all_off();
+    LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_ON);
 }
 
+/* loop is only for low power optimized operation */
 void loop()
 {
-    /* loop is only for low power optimized operation */
+    unsigned long elapsedSinceStart = 0;
+    /* woken up, detach interrupt and turn off alarm, set new one */
+    serial_begin();
+    ScaleModule::begin(); /* 500ms needed */
+    RTCModule::preBeginPowerOn(); /* 500ms needed */
+    GSMModule::preBeginPowerOn(); /* 5000ms needed */
+
+    sleep_power_down_565ms_adc_off_bod_on();
+    elapsedSinceStart += 565UL;
+    serial_printf(F("RTC on\n"));
+    if (!RTCModule::begin(millis() + elapsedSinceStart)) {
+        show_setup_result_final_block(RESULT_FAILURE);
+    }
+
+    /* read date and time */
+    DateTime alarm_time = RTCModule::now();
+    if (!alarm_time.isValid()) {
+        show_setup_result_final_block(RESULT_FAILURE);
+    }
+    RTCModule::end();
+    
+    /* check battery voltage under load */
+    float battery_voltage = get_supply_voltage();
+    serial_printf(F("AVCC: %f V\n"), battery_voltage);
+    if (battery_voltage < AVCC_MIN_VOLTAGE) {
+        show_setup_result_final_block(RESULT_FAILURE);
+    }
+
+    date_time = alarm_time;
+    if (power_on_self_test_result.fields.rtc_timer_mode) {
+        alarm_time = date_time + TimeSpan(1, 0, 0, 0);
+    } else {
+        alarm_time = DateTime(date_time.year(), date_time.month(), date_time.day(), sms_hour_of_day, 0, 0);
+        if (date_time.hour() >= sms_hour_of_day) {
+            alarm_time = alarm_time + TimeSpan(1, 0, 0, 0);
+        }
+    }
+
+    DHTModule::begin(); /* 2050ms needed */
+
+    /* stabilize the scale */
+    if (ScaleModule::waitReadyRetry(10, 100UL)) {
+        ScaleModule::setScale(scale_factor);
+        ScaleModule::setOffset(scale_tare_offset);
+        ScaleModule::stabilize(3000U);
+        elapsedSinceStart += 3000;
+    } else {
+        sleep_idle_timeout_millis(2050U);
+    }
+
+    float temp = NAN;
+    float humi = NAN;
+    if (DHTModule::ready(millis() + 2500U)) {
+        temp = DHTModule::readTemperature();
+        humi = DHTModule::readHumidity();
+    }
+    DHTModule::end();
+
+    float weight = ScaleModule::getUnits(10);
+    ScaleModule::end();
+    float last_weight_24 = DataEEPROM::getLastMeasurementKg();
+    DataEEPROM::setLastMeasurementKg(weight);
+    float diff24 = weight - last_weight_24;
+
+    bool error = true;
+    do {
+        error = !GSMModule::begin(millis() + elapsedSinceStart);
+
+        if (error) {
+            GSMModule::end();
+        } else {
+            bool registeredOnNetwork = false;
+            unsigned long start = millis();
+            do {
+                registeredOnNetwork = GSMModule::registeredOnNetwork();
+                if (!registeredOnNetwork) {
+                    sleep_idle_timeout_millis(2000U);
+                }
+            } while (!registeredOnNetwork && (millis() - start < 120000UL)); /* 2 minute timeout */
+    
+            error = !registeredOnNetwork;
+        }
+
+
+        RTCModule::preBeginPowerOn();
+        uint8_t rssi = 99;
+        uint8_t signalLevel = 99;
+
+        GSMModule::signalQuality(rssi, signalLevel);
+        signalLevel = mapCSQToSignalLevel(rssi);
+        battery_voltage = get_supply_voltage();
+        RTCModule::begin();
+        DateTime now = RTCModule::now();
+        if (now.isValid()) {
+            date_time = now;
+        }
+        bool alarmSet = RTCModule::setWakeupAlarm(alarm_time, Ds3231Alarm1Mode::DS3231_A1_Hour);
+        RTCModule::end();
+
+        serial_printf(F("Alarm: %02u:%02u:%02u - %02u.%02u.%04u\n"), alarm_time.hour(), alarm_time.minute(), alarm_time.second(), alarm_time.day(), alarm_time.month(), alarm_time.year());
+        if (!alarmSet) {
+            show_setup_result_serial_only(RESULT_FAILURE);
+            error = true;
+        }
+        
+        memset(smsBuffer, '\0', sizeof(smsBuffer));
+        snprintf_P(smsBuffer, sizeof(smsBuffer), PSTR("[Masa]: %.2fkg" NEW_LINE
+                                                      "[Unos/24h]: %.2fkg" NEW_LINE
+                                                      "[Temperatura]: %.2fºC" NEW_LINE
+                                                      "[Vlaznost]: %.1f%%" NEW_LINE
+                                                      "[Signal]: %u/9" NEW_LINE
+                                                      "[Napon]: %.3fV" NEW_LINE
+                                                      "[Vreme]: %02u:%02u:%02u - %02u.%02u.%04u.%S"),
+                                                             weight,
+                                                             diff24,
+                                                             temp,
+                                                             humi,
+                                                             signalLevel,
+                                                             battery_voltage,
+                                                             date_time.hour(),
+                                                             date_time.minute(),
+                                                             date_time.second(),
+                                                             date_time.day(),
+                                                             date_time.month(),
+                                                             date_time.year(),
+                                                             error ? PSTR("\n\nGRESKA!") : PSTR(""));
+        serial_printf(F("\n%s\n"), smsBuffer);
+        GSMModule::sendSMS(phone_number_to_send_sms, smsBuffer);
+        GSMModule::end();
+    } while (0);
+
+    if (error) {
+        show_setup_result_final_block(RESULT_FAILURE);
+    }
+
+    power_all_off();
+    attachInterrupt(digitalPinToInterrupt(RTC_INT_PIN), rtc_alarm_isr, FALLING);
+    LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);
+    detachInterrupt(digitalPinToInterrupt(RTC_INT_PIN));
 }
 
 bool check_sms_buffer_ovf(int snprintf_result)
@@ -504,6 +664,10 @@ void power_all_off()
     /* disable builtin led */
     pinMode(LED_BUILTIN, OUTPUT);
     builtin_led_off();
+
+    
+    pinMode(RTC_INT_PIN, INPUT);
+    pinMode(ACCEL_INT_PIN, INPUT);
 }
 
 bool send_sms(const char* number, const char* message)
@@ -680,4 +844,19 @@ bool setup_calibrate_scale_factor()
     Serial.printf(F(STRING_SAVED_FACTOR_SC_SPACE " %.5f" NEW_LINE), scale_factor);
 
     return scale_factor == DataEEPROM::getScaleCalibrationValue() ? RESULT_SUCCESS : RESULT_FAILURE;
+}
+
+uint8_t mapCSQToSignalLevel(const uint8_t csq) {
+    if (csq < 1 || csq > 31) {
+      return 0;         // No signal / Unknown
+    }
+    if (csq == 1) {
+      return 1;         // -111 dBm
+    }
+    if (csq == 31) {
+      return 9;         // Strongest signal
+    }
+
+    // Map CSQ 2-30 to range 2-8
+    return static_cast<uint8_t>((((float)(csq - 2) * (8 - 2)) / (30 - 2)) + 2.5f);  // Rounding at 0.5
 }
