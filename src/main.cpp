@@ -553,6 +553,7 @@ void loop()
     float diff24 = weight - last_weight_24;
 
     bool error = true;
+    bool alarmSet = false;
     do {
         error = !GSMModule::begin(millis() + elapsedSinceStart);
 
@@ -584,24 +585,24 @@ void loop()
         if (now.isValid()) {
             date_time = now;
         }
-        bool alarmSet = RTCModule::setWakeupAlarm(alarm_time, Ds3231Alarm1Mode::DS3231_A1_Date);
+        alarmSet = RTCModule::setWakeupAlarm(alarm_time, Ds3231Alarm1Mode::DS3231_A1_Date);
         RTCModule::end();
 
         serial_printf(F("Alarm: %02u:%02u:%02u - %02u.%02u.%04u\n"), alarm_time.hour(), alarm_time.minute(), alarm_time.second(), alarm_time.day(), alarm_time.month(), alarm_time.year());
         if (!alarmSet) {
             show_setup_result_serial_only(RESULT_FAILURE);
-            error = true;
+            error = true; // ovo treba izbaciti 
         }
         
         memset(smsBuffer, '\0', sizeof(smsBuffer));
-        snprintf_P(smsBuffer, sizeof(smsBuffer), PSTR("[Masa]: %.2fkg" NEW_LINE
-                                                      "[Unos]: %.2fkg" NEW_LINE
-                                                      "[Temp]: %.1fC" NEW_LINE
-                                                      "[Vlaga]: %.1f%%" NEW_LINE
-                                                      "[Signal]: %u/9" NEW_LINE
-                                                      "[Napon]: %.3fV" NEW_LINE
-                                                      "[Vreme]: %02u:%02u:%02u %02u.%02u.%04u." NEW_LINE
-                                                      "[Alarm]: %02uh %02u.%02u.%04u.%S"),
+        snprintf_P(smsBuffer, sizeof(smsBuffer), PSTR("Masa: %.2fkg" NEW_LINE
+                                                      "Unos: %.2fkg" NEW_LINE
+                                                      "Temp: %.1fC" NEW_LINE
+                                                      "Vlaga: %.1f%%" NEW_LINE
+                                                      "Signal: %u/9" NEW_LINE
+                                                      "Napon: %.3fV" NEW_LINE
+                                                      "Vreme: %02u:%02u %02u.%02u.%04u" NEW_LINE
+                                                      "Alarm: %02uh %02u.%02u.%04u%S"),
                                                              weight,
                                                              diff24,
                                                              temp,
@@ -610,7 +611,6 @@ void loop()
                                                              battery_voltage,
                                                              date_time.hour(),
                                                              date_time.minute(),
-                                                             date_time.second(),
                                                              date_time.day(),
                                                              date_time.month(),
                                                              date_time.year(),
@@ -618,7 +618,7 @@ void loop()
                                                              alarm_time.day(),
                                                              alarm_time.month(),
                                                              alarm_time.year(),
-                                                             error ? PSTR("\nGRESKA!") : PSTR(""));
+                                                             alarmSet ? PSTR("") : PSTR("\n!"));
         serial_printf(F("\n%s\n"), smsBuffer);
         GSMModule::sendSMS(phone_number_to_send_sms, smsBuffer);
         GSMModule::end();
