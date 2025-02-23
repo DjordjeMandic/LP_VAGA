@@ -584,7 +584,7 @@ void loop()
         if (now.isValid()) {
             date_time = now;
         }
-        bool alarmSet = RTCModule::setWakeupAlarm(alarm_time, Ds3231Alarm1Mode::DS3231_A1_Hour);
+        bool alarmSet = RTCModule::setWakeupAlarm(alarm_time, Ds3231Alarm1Mode::DS3231_A1_Date);
         RTCModule::end();
 
         serial_printf(F("Alarm: %02u:%02u:%02u - %02u.%02u.%04u\n"), alarm_time.hour(), alarm_time.minute(), alarm_time.second(), alarm_time.day(), alarm_time.month(), alarm_time.year());
@@ -595,12 +595,13 @@ void loop()
         
         memset(smsBuffer, '\0', sizeof(smsBuffer));
         snprintf_P(smsBuffer, sizeof(smsBuffer), PSTR("[Masa]: %.2fkg" NEW_LINE
-                                                      "[Unos/24h]: %.2fkg" NEW_LINE
-                                                      "[Temperatura]: %.2fC" NEW_LINE
-                                                      "[Vlaznost]: %.1f%%" NEW_LINE
+                                                      "[Unos]: %.2fkg" NEW_LINE
+                                                      "[Temp]: %.1fC" NEW_LINE
+                                                      "[Vlaga]: %.1f%%" NEW_LINE
                                                       "[Signal]: %u/9" NEW_LINE
                                                       "[Napon]: %.3fV" NEW_LINE
-                                                      "[Vreme]: %02u:%02u:%02u - %02u.%02u.%04u.%S"),
+                                                      "[Vreme]: %02u:%02u:%02u %02u.%02u.%04u." NEW_LINE
+                                                      "[Alarm]: %02uh %02u.%02u.%04u.%S"),
                                                              weight,
                                                              diff24,
                                                              temp,
@@ -613,7 +614,11 @@ void loop()
                                                              date_time.day(),
                                                              date_time.month(),
                                                              date_time.year(),
-                                                             error ? PSTR("\n\nGRESKA!") : PSTR(""));
+                                                             alarm_time.hour(),
+                                                             alarm_time.day(),
+                                                             alarm_time.month(),
+                                                             alarm_time.year(),
+                                                             error ? PSTR("\nGRESKA!") : PSTR(""));
         serial_printf(F("\n%s\n"), smsBuffer);
         GSMModule::sendSMS(phone_number_to_send_sms, smsBuffer);
         GSMModule::end();
@@ -624,6 +629,7 @@ void loop()
     }
 
     power_all_off();
+    pinMode(RTC_INT_PIN, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(RTC_INT_PIN), rtc_alarm_isr, FALLING);
     LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);
     detachInterrupt(digitalPinToInterrupt(RTC_INT_PIN));
@@ -688,11 +694,11 @@ void show_setup_result_final_block(bool success)
 {
     show_setup_result_serial_only(success);
     serial_printf(F(STRING_HALTED NEW_LINE));
+    detachInterrupt(digitalPinToInterrupt(RTC_INT_PIN));
+    detachInterrupt(digitalPinToInterrupt(ACCEL_INT_PIN));
 
     power_all_off();
 
-    detachInterrupt(digitalPinToInterrupt(RTC_INT_PIN));
-    detachInterrupt(digitalPinToInterrupt(ACCEL_INT_PIN));
 
     if (success)
     {
