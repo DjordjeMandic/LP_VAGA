@@ -602,7 +602,7 @@ void loop()
                                                       "Signal: %u/9" NEW_LINE
                                                       "Napon: %.3fV" NEW_LINE
                                                       "Vreme: %02u:%02u %02u.%02u.%04u" NEW_LINE
-                                                      "Alarm: %02uh %02u.%02u.%04u%S"),
+                                                      "Alarm: %02uh %02u.%02u.%04u.%S"),
                                                              weight,
                                                              diff24,
                                                              temp,
